@@ -212,6 +212,14 @@ const entries: SubCliEntry[] = [
     },
   },
   {
+    name: "credentials",
+    description: "Credential storage management",
+    register: async (program) => {
+      const mod = await import("../credentials-cli.js");
+      mod.registerCredentialsCli(program);
+    },
+  },
+  {
     name: "skills",
     description: "Skills management",
     register: async (program) => {
