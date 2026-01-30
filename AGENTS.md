@@ -6,6 +6,7 @@
 - Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/provider-web.ts`, infra in `src/infra`, media pipeline in `src/media`).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
+- Design docs: `design-docs/` (architecture, RFCs, ADRs). Use `0-template.md` for new docs; `1-moltbot-current-working-design.md` is the living master design document.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
 - Plugins: install runs `npm install --omit=dev` in plugin dir; runtime deps must live in `dependencies`. Avoid `workspace:*` in `dependencies` (npm install breaks); put `moltbot` in `devDependencies` or `peerDependencies` instead (runtime resolves `clawdbot/plugin-sdk` via jiti alias).
 - Installers served from `https://molt.bot/*`: live in the sibling repo `../molt.bot` (`public/install.sh`, `public/install-cli.sh`, `public/install.ps1`).
