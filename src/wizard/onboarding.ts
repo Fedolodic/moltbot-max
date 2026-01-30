@@ -426,6 +426,26 @@ export async function runOnboardingWizard(
     }
   }
 
+  // Display token once for non-native clients (GAP-38)
+  if (settings.gatewayToken && settings.authMode === "token") {
+    await prompter.note(
+      [
+        "Your gateway token (save this for non-native clients):",
+        "",
+        `  ${settings.gatewayToken}`,
+        "",
+        "Use this token to authenticate from:",
+        "  - Web UI (Control Panel)",
+        "  - Third-party integrations",
+        "  - CLI on other machines",
+        "",
+        "Note: This is the only time the token will be shown in plaintext.",
+        "You can also find it in: ~/.clawdbot/moltbot.json (gateway.auth.token)",
+      ].join("\n"),
+      "Gateway Token",
+    );
+  }
+
   if (opts.skipChannels ?? opts.skipProviders) {
     await prompter.note("Skipping channel setup.", "Channels");
   } else {

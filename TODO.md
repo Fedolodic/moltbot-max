@@ -312,11 +312,11 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 #### Token Onboarding UX Gaps (Design Doc lines 161-165)
 
-- [ ] **GAP-38** Token display during onboarding
+- [x] **GAP-38** Token display during onboarding ✅
   - Design doc: "Display token once for user to save" (line 163)
-  - Current: Token stored in keychain + config, but user display needs verification
-  - Should: Show token in terminal with copy instructions for non-native clients
-  - Priority: Medium
+  - **Completed**: 2026-01-30
+  - Implementation: Added token display note in `src/wizard/onboarding.ts` after keychain storage
+  - Shows token value with copy instructions for web UI, third-party integrations, CLI on other machines
 
 - [ ] **GAP-39** Token recovery mechanism
   - Design doc: Implies token can be retrieved from keychain
