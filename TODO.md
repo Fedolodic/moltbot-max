@@ -715,10 +715,15 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Prompt user before first use
   - Option to remember approval per session/permanently
 
-- [ ] **3.3.4** Add audit check for dangerous tools enabled without approval
+- [x] **3.3.4** Add audit check for dangerous tools enabled without approval ✅
   - Dependencies: 3.3.2
-  - Severity: warn
+  - Severity: warn (enabled), critical (enabled without approval)
   - Recommend enabling requireApproval
+  - **Completed**: 2026-01-30
+  - Implementation: Updated `collectDangerousToolsFindings()` in `src/security/audit.ts`
+    - Checks `tools.dangerousTools.<tool>.enabled` and `requireApproval`
+    - Critical severity if enabled without approval
+    - Warn severity if enabled with approval
 
 ### 3.4 Platform Sandbox Implementations
 

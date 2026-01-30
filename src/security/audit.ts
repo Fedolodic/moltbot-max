@@ -563,24 +563,49 @@ function collectSecurityLevelFindings(cfg: MoltbotConfig): SecurityAuditFinding[
 
 /**
  * Collect dangerous tools configuration findings.
- * Part of Phase 1: Security Hardening by Default.
+ * Part of Phase 1: Security Hardening by Default (3.3.4).
+ *
+ * Checks for:
+ * 1. Dangerous tools enabled (warn)
+ * 2. Dangerous tools enabled WITHOUT requireApproval (critical)
  */
 function collectDangerousToolsFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
 
-  // List of dangerous tool categories
-  const dangerousTools = ["browser", "canvas", "cron", "exec"] as const;
-  const toolsConfig = cfg.tools as Record<string, { enabled?: boolean }> | undefined;
+  // Dangerous tool categories with descriptions
+  const dangerousTools = [
+    { id: "browser", desc: "browser automation (Playwright/Puppeteer)" },
+    { id: "canvas", desc: "canvas/drawing tool" },
+    { id: "cron", desc: "scheduled task execution" },
+    { id: "exec", desc: "shell command execution" },
+  ] as const;
+
+  const dangerousToolsConfig = cfg.tools?.dangerousTools;
 
   for (const tool of dangerousTools) {
-    const toolConfig = toolsConfig?.[tool];
-    if (toolConfig?.enabled === true) {
+    const toolConfig = dangerousToolsConfig?.[tool.id as keyof typeof dangerousToolsConfig];
+
+    // Default: enabled=false, requireApproval=true
+    const enabled = toolConfig?.enabled === true;
+    const requireApproval = toolConfig?.requireApproval !== false; // default true
+
+    if (enabled && !requireApproval) {
+      // Critical: enabled without approval requirement
       findings.push({
-        checkId: `tools.dangerous.${tool}_enabled`,
+        checkId: `tools.dangerous.${tool.id}_no_approval`,
+        severity: "critical",
+        title: `Dangerous tool enabled without approval: ${tool.id}`,
+        detail: `tools.dangerousTools.${tool.id} has enabled=true and requireApproval=false; ${tool.desc} can execute without user confirmation.`,
+        remediation: `Set tools.dangerousTools.${tool.id}.requireApproval=true to require per-invocation approval.`,
+      });
+    } else if (enabled) {
+      // Warn: enabled (but with approval)
+      findings.push({
+        checkId: `tools.dangerous.${tool.id}_enabled`,
         severity: "warn",
-        title: `Dangerous tool enabled: ${tool}`,
-        detail: `tools.${tool}.enabled=true; this tool has elevated capabilities that could be exploited.`,
-        remediation: `Disable or require approval for tools.${tool} unless explicitly needed.`,
+        title: `Dangerous tool enabled: ${tool.id}`,
+        detail: `tools.dangerousTools.${tool.id}.enabled=true; ${tool.desc} is available (with approval required).`,
+        remediation: `Disable tools.dangerousTools.${tool.id} unless explicitly needed.`,
       });
     }
   }
