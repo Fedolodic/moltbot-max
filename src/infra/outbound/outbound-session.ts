@@ -111,7 +111,8 @@ function buildBaseSessionKey(params: {
     channel: params.channel,
     accountId: params.accountId,
     peer: params.peer,
-    dmScope: params.cfg.session?.dmScope ?? "main",
+    // Default to per-channel-peer for security (GAP-34)
+    dmScope: params.cfg.session?.dmScope ?? "per-channel-peer",
     identityLinks: params.cfg.session?.identityLinks,
   });
 }

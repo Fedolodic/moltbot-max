@@ -154,7 +154,8 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
     return matchesAccountId(binding.match?.accountId, accountId);
   });
 
-  const dmScope = input.cfg.session?.dmScope ?? "main";
+  // Default to per-channel-peer for security (GAP-34)
+  const dmScope = input.cfg.session?.dmScope ?? "per-channel-peer";
   const identityLinks = input.cfg.session?.identityLinks;
 
   const choose = (agentId: string, matchedBy: ResolvedAgentRoute["matchedBy"]) => {

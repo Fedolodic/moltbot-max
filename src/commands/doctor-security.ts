@@ -97,7 +97,8 @@ export async function noteSecurityWarnings(cfg: MoltbotConfig) {
       .map((v) => v.trim())
       .filter(Boolean);
     const allowCount = Array.from(new Set([...normalizedCfg, ...normalizedStore])).length;
-    const dmScope = cfg.session?.dmScope ?? "main";
+    // Default to per-channel-peer for security (GAP-34)
+    const dmScope = cfg.session?.dmScope ?? "per-channel-peer";
     const isMultiUserDm = hasWildcard || allowCount > 1;
 
     if (dmPolicy === "open") {
@@ -124,7 +125,7 @@ export async function noteSecurityWarnings(cfg: MoltbotConfig) {
 
     if (dmScope === "main" && isMultiUserDm) {
       warnings.push(
-        `- ${params.label} DMs: multiple senders share the main session; set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.`,
+        `- ${params.label} DMs: multiple senders share the main session; remove session.dmScope="main" to use the secure default ("per-channel-peer"), or set to "per-account-channel-peer" for multi-account channels.`,
       );
     }
   };

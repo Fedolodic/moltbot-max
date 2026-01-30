@@ -8,6 +8,7 @@ import { resolveGatewayAuth } from "../gateway/auth.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { probeGateway } from "../gateway/probe.js";
+import { resolveSecurityConfig } from "../config/security-presets.js";
 import {
   collectAttackSurfaceSummaryFindings,
   collectExposureMatrixFindings,
@@ -21,6 +22,7 @@ import {
   collectSyncedFolderFindings,
   readConfigSnapshotForAudit,
 } from "./audit-extra.js";
+import { collectCredentialStorageFindings } from "./audit-credentials.js";
 import { readChannelAllowFromStore } from "../pairing/pairing-store.js";
 import { resolveNativeCommandsEnabled, resolveNativeSkillsEnabled } from "../config/commands.js";
 import {
@@ -344,12 +346,13 @@ function collectGatewayConfigFindings(
 
   const token =
     typeof auth.token === "string" && auth.token.trim().length > 0 ? auth.token.trim() : null;
-  if (auth.mode === "token" && token && token.length < 24) {
+  if (auth.mode === "token" && token && token.length < 32) {
     findings.push({
-      checkId: "gateway.token_too_short",
-      severity: "warn",
-      title: "Gateway token looks short",
-      detail: `gateway auth token is ${token.length} chars; prefer a long random token.`,
+      checkId: "gateway.auth.weak_token",
+      severity: "critical",
+      title: "Gateway token is too short",
+      detail: `gateway auth token is ${token.length} chars; minimum recommended is 32 chars for adequate entropy.`,
+      remediation: "Generate a new token with at least 32 characters: `openssl rand -base64 32`",
     });
   }
 
@@ -443,6 +446,148 @@ function collectElevatedFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
   return findings;
 }
 
+/**
+ * Collect sandbox security configuration findings.
+ * Part of Phase 1: Security Hardening by Default.
+ */
+function collectSandboxSecurityFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+  const securityConfig = resolveSecurityConfig(cfg.security);
+
+  // Check: Sandbox mode is off
+  // Sandbox config can be at agents.defaults.sandbox.mode or per-agent
+  const agentsSandboxMode = cfg.agents?.defaults?.sandbox?.mode;
+  const sandboxMode = agentsSandboxMode ?? securityConfig.sandbox.defaultMode;
+  if (sandboxMode === "off") {
+    findings.push({
+      checkId: "sandbox.mode.off",
+      severity: "critical",
+      title: "Sandboxing is disabled",
+      detail:
+        'sandbox.mode="off" disables all execution sandboxing, allowing tool execution directly on the host.',
+      remediation: 'Set sandbox.mode="all" (recommended) or "non-main" for defense in depth.',
+    });
+  } else if (sandboxMode === "non-main") {
+    findings.push({
+      checkId: "sandbox.mode.non_main",
+      severity: "info",
+      title: "Sandbox enabled for non-main sessions only",
+      detail:
+        'sandbox.mode="non-main" sandboxes agent sessions but runs the main session on the host.',
+      remediation: 'Consider sandbox.mode="all" for maximum isolation.',
+    });
+  }
+
+  // Check: Network policy is unrestricted
+  const networkPolicy = securityConfig.sandbox.networkPolicy;
+  if (networkPolicy === "allow") {
+    // Only warn if sandbox mode is enabled
+    if (sandboxMode !== "off") {
+      findings.push({
+        checkId: "sandbox.network.unrestricted",
+        severity: "warn",
+        title: "Sandbox network policy allows all outbound",
+        detail:
+          "Sandboxed execution can make arbitrary network connections. Consider restricting to known API endpoints.",
+        remediation:
+          'Set security.sandbox.networkPolicy="deny" with a specific allowlist for API domains.',
+      });
+    }
+  }
+
+  return findings;
+}
+
+/**
+ * Collect security level and preset compliance findings.
+ * Part of Phase 1: Security Hardening by Default.
+ */
+function collectSecurityLevelFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+  const securityConfig = resolveSecurityConfig(cfg.security);
+
+  // Check: Security level is 'standard' (lowest)
+  if (securityConfig.level === "standard") {
+    findings.push({
+      checkId: "security.level.standard",
+      severity: "warn",
+      title: "Security level is standard (minimum protection)",
+      detail:
+        "The 'standard' security level provides basic defaults. Consider 'hardened' for production use.",
+      remediation:
+        'Set security.level="hardened" (recommended) or "paranoid" for maximum security.',
+    });
+  }
+
+  // Check: Gateway auth for loopback when security level is hardened/paranoid
+  if (
+    (securityConfig.level === "hardened" || securityConfig.level === "paranoid") &&
+    securityConfig.gateway.requireAuthForLoopback === false
+  ) {
+    findings.push({
+      checkId: "security.gateway.loopback_auth_mismatch",
+      severity: "warn",
+      title: "Loopback auth disabled despite security level",
+      detail: `Security level is '${securityConfig.level}' but gateway.requireAuthForLoopback is false.`,
+      remediation:
+        "Set security.gateway.requireAuthForLoopback=true or lower security level to 'standard'.",
+    });
+  }
+
+  // Check: Audit block on critical is enabled for paranoid
+  if (securityConfig.level === "paranoid" && securityConfig.audit.blockOnCritical === false) {
+    findings.push({
+      checkId: "security.audit.block_mismatch",
+      severity: "warn",
+      title: "Paranoid mode without blocking on critical findings",
+      detail:
+        "Security level is 'paranoid' but audit.blockOnCritical is false; gateway will start even with critical security issues.",
+      remediation: "Set security.audit.blockOnCritical=true for paranoid mode.",
+    });
+  }
+
+  // Check: Skills allowlist required for paranoid
+  if (securityConfig.level === "paranoid" && !securityConfig.skills.requireAllowlist) {
+    findings.push({
+      checkId: "security.skills.allowlist_mismatch",
+      severity: "warn",
+      title: "Paranoid mode without skill allowlist requirement",
+      detail:
+        "Security level is 'paranoid' but skills.requireAllowlist is false; unvetted skills can be installed.",
+      remediation: "Set security.skills.requireAllowlist=true for paranoid mode.",
+    });
+  }
+
+  return findings;
+}
+
+/**
+ * Collect dangerous tools configuration findings.
+ * Part of Phase 1: Security Hardening by Default.
+ */
+function collectDangerousToolsFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+  const findings: SecurityAuditFinding[] = [];
+
+  // List of dangerous tool categories
+  const dangerousTools = ["browser", "canvas", "cron", "exec"] as const;
+  const toolsConfig = cfg.tools as Record<string, { enabled?: boolean }> | undefined;
+
+  for (const tool of dangerousTools) {
+    const toolConfig = toolsConfig?.[tool];
+    if (toolConfig?.enabled === true) {
+      findings.push({
+        checkId: `tools.dangerous.${tool}_enabled`,
+        severity: "warn",
+        title: `Dangerous tool enabled: ${tool}`,
+        detail: `tools.${tool}.enabled=true; this tool has elevated capabilities that could be exploited.`,
+        remediation: `Disable or require approval for tools.${tool} unless explicitly needed.`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 async function collectChannelSecurityFindings(params: {
   cfg: MoltbotConfig;
   plugins: ReturnType<typeof listChannelPlugins>;
@@ -468,7 +613,8 @@ async function collectChannelSecurityFindings(params: {
     const policyPath = input.policyPath ?? `${input.allowFromPath}policy`;
     const configAllowFrom = normalizeAllowFromList(input.allowFrom);
     const hasWildcard = configAllowFrom.includes("*");
-    const dmScope = params.cfg.session?.dmScope ?? "main";
+    // Default to per-channel-peer for security (GAP-34)
+    const dmScope = params.cfg.session?.dmScope ?? "per-channel-peer";
     const storeAllowFrom = await readChannelAllowFromStore(input.provider).catch(() => []);
     const normalizeEntry = input.normalizeEntry ?? ((value: string) => value);
     const normalizedCfg = configAllowFrom
@@ -520,7 +666,7 @@ async function collectChannelSecurityFindings(params: {
         detail:
           "Multiple DM senders currently share the main session, which can leak context across users.",
         remediation:
-          'Set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate DM sessions per sender.',
+          'Remove session.dmScope="main" to use the secure default ("per-channel-peer"), or set to "per-account-channel-peer" for multi-account channels.',
       });
     }
   };
@@ -867,6 +1013,14 @@ export async function runSecurityAudit(opts: SecurityAuditOptions): Promise<Secu
 
   findings.push(...collectAttackSurfaceSummaryFindings(cfg));
   findings.push(...collectSyncedFolderFindings({ stateDir, configPath }));
+
+  // Credential storage checks
+  findings.push(...(await collectCredentialStorageFindings({ stateDir })));
+
+  // Security level and sandbox checks
+  findings.push(...collectSecurityLevelFindings(cfg));
+  findings.push(...collectSandboxSecurityFindings(cfg));
+  findings.push(...collectDangerousToolsFindings(cfg));
 
   findings.push(...collectGatewayConfigFindings(cfg, env));
   findings.push(...collectBrowserControlFindings(cfg));

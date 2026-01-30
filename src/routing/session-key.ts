@@ -120,7 +120,8 @@ export function buildAgentPeerSessionKey(params: {
 }): string {
   const peerKind = params.peerKind ?? "dm";
   if (peerKind === "dm") {
-    const dmScope = params.dmScope ?? "main";
+    // Default to per-channel-peer for security (GAP-34)
+    const dmScope = params.dmScope ?? "per-channel-peer";
     let peerId = (params.peerId ?? "").trim();
     const linkedPeerId =
       dmScope === "main"
