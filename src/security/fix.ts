@@ -1,11 +1,14 @@
 import fs from "node:fs/promises";
+import fsSync from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 import JSON5 from "json5";
 
 import type { MoltbotConfig } from "../config/config.js";
 import { createConfigIO } from "../config/config.js";
 import { resolveConfigPath, resolveOAuthDir, resolveStateDir } from "../config/paths.js";
+import { migrateCredentialsAutoFix, type CredentialMigrationResult } from "./audit-credentials.js";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { INCLUDE_KEY, MAX_INCLUDE_DEPTH } from "../config/includes.js";
 import { normalizeAgentId } from "../routing/session-key.js";
@@ -31,7 +34,25 @@ export type SecurityFixIcaclsAction = {
   error?: string;
 };
 
-export type SecurityFixAction = SecurityFixChmodAction | SecurityFixIcaclsAction;
+export type SecurityFixCredentialMigrationAction = {
+  kind: "credential-migration";
+  ok: boolean;
+  migrated: number;
+  failed: number;
+  skipped: number;
+  filesDeleted: string[];
+  details: Array<{
+    key: string;
+    status: "migrated" | "failed" | "skipped";
+    error?: string;
+    fromFile?: string;
+  }>;
+};
+
+export type SecurityFixAction =
+  | SecurityFixChmodAction
+  | SecurityFixIcaclsAction
+  | SecurityFixCredentialMigrationAction;
 
 export type SecurityFixResult = {
   ok: boolean;
@@ -42,6 +63,70 @@ export type SecurityFixResult = {
   actions: SecurityFixAction[];
   errors: string[];
 };
+
+/**
+ * Securely delete a file by overwriting with random data before unlinking.
+ */
+async function secureDeleteFile(filePath: string): Promise<boolean> {
+  try {
+    const stat = fsSync.statSync(filePath);
+    if (!stat.isFile()) return false;
+
+    // Overwrite with random data
+    const randomData = crypto.randomBytes(stat.size);
+    fsSync.writeFileSync(filePath, randomData);
+
+    // Overwrite with zeros
+    fsSync.writeFileSync(filePath, Buffer.alloc(stat.size, 0));
+
+    // Unlink
+    fsSync.unlinkSync(filePath);
+    return true;
+  } catch {
+    // Fall back to regular delete
+    try {
+      fsSync.unlinkSync(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/**
+ * Perform credential migration as part of security fix.
+ */
+async function performCredentialMigration(params: {
+  stateDir: string;
+  secureDelete: boolean;
+}): Promise<SecurityFixCredentialMigrationAction> {
+  const result = await migrateCredentialsAutoFix({
+    stateDir: params.stateDir,
+    secureDelete: params.secureDelete,
+  });
+
+  const filesDeleted: string[] = [];
+
+  // Securely delete files if requested and migration was successful
+  if (params.secureDelete && result.ok && result.filesToDelete.length > 0) {
+    for (const filePath of result.filesToDelete) {
+      const deleted = await secureDeleteFile(filePath);
+      if (deleted) {
+        filesDeleted.push(filePath);
+      }
+    }
+  }
+
+  return {
+    kind: "credential-migration",
+    ok: result.ok,
+    migrated: result.migrated,
+    failed: result.failed,
+    skipped: result.skipped,
+    filesDeleted,
+    details: result.details,
+  };
+}
 
 async function safeChmod(params: {
   path: string;
@@ -411,6 +496,10 @@ export async function fixSecurityFootguns(opts?: {
   configPath?: string;
   platform?: NodeJS.Platform;
   exec?: ExecFn;
+  /** If true, migrate plaintext credentials to secure storage. */
+  migrateCredentials?: boolean;
+  /** If true, securely delete plaintext files after migration. */
+  secureDeletePlaintext?: boolean;
 }): Promise<SecurityFixResult> {
   const env = opts?.env ?? process.env;
   const platform = opts?.platform ?? process.platform;
@@ -449,6 +538,27 @@ export async function fixSecurityFootguns(opts?: {
         configWritten = true;
       } catch (err) {
         errors.push(`writeConfigFile failed: ${String(err)}`);
+      }
+    }
+  }
+
+  // Credential migration (if enabled)
+  if (opts?.migrateCredentials !== false) {
+    const migrationResult = await performCredentialMigration({
+      stateDir,
+      secureDelete: opts?.secureDeletePlaintext ?? false,
+    }).catch((err) => {
+      errors.push(`credential migration failed: ${String(err)}`);
+      return null;
+    });
+
+    if (migrationResult) {
+      actions.push(migrationResult);
+      if (migrationResult.migrated > 0) {
+        changes.push(`Migrated ${migrationResult.migrated} credential(s) to secure storage`);
+      }
+      if (migrationResult.filesDeleted.length > 0) {
+        changes.push(`Securely deleted ${migrationResult.filesDeleted.length} plaintext file(s)`);
       }
     }
   }
