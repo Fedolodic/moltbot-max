@@ -1,6 +1,8 @@
 import type { Command } from "commander";
 import { gatewayStatusCommand } from "../../commands/gateway-status.js";
 import { formatHealthChannelLines, type HealthSummary } from "../../commands/health.js";
+import { retrieveGatewayTokenFromKeychain } from "../../commands/onboard-helpers.js";
+import { loadConfig } from "../../config/config.js";
 import { discoverGatewayBeacons } from "../../infra/bonjour-discovery.js";
 import type { CostUsageSummary } from "../../infra/session-cost-usage.js";
 import { WIDE_AREA_DISCOVERY_DOMAIN } from "../../infra/widearea-dns.js";
@@ -328,5 +330,61 @@ export function registerGatewayCli(program: Command) {
           }
         }
       }, "gateway discover failed");
+    });
+
+  // GAP-39: Token recovery mechanism
+  const tokenCmd = gateway.command("token").description("Gateway token management");
+
+  tokenCmd
+    .command("show")
+    .description("Show the current gateway authentication token")
+    .option("--json", "Output JSON", false)
+    .action(async (opts) => {
+      await runGatewayCommand(async () => {
+        const rich = isRich();
+
+        // Try keychain first
+        const keychainToken = await retrieveGatewayTokenFromKeychain();
+
+        // Fallback to config file
+        const cfg = await loadConfig();
+        const configToken = cfg.gateway?.auth?.token?.trim() || null;
+
+        const token = keychainToken ?? configToken;
+        const source = keychainToken ? "keychain" : configToken ? "config" : "none";
+
+        if (opts.json) {
+          defaultRuntime.log(
+            JSON.stringify(
+              {
+                found: !!token,
+                source,
+                token: token ?? null,
+              },
+              null,
+              2,
+            ),
+          );
+          return;
+        }
+
+        if (!token) {
+          defaultRuntime.log(
+            colorize(rich, theme.warn, "No gateway token found in keychain or config file."),
+          );
+          defaultRuntime.log(
+            `Run ${colorize(rich, theme.muted, "moltbot onboard")} to set up gateway authentication.`,
+          );
+          return;
+        }
+
+        defaultRuntime.log(colorize(rich, theme.heading, "Gateway Token"));
+        defaultRuntime.log(`${colorize(rich, theme.muted, "Source:")} ${source}`);
+        defaultRuntime.log(`${colorize(rich, theme.muted, "Token:")} ${token}`);
+        defaultRuntime.log("");
+        defaultRuntime.log(
+          colorize(rich, theme.warn, "Warning: Keep this token secure. Do not share it publicly."),
+        );
+      }, "gateway token show failed");
     });
 }

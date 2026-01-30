@@ -318,11 +318,12 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Implementation: Added token display note in `src/wizard/onboarding.ts` after keychain storage
   - Shows token value with copy instructions for web UI, third-party integrations, CLI on other machines
 
-- [ ] **GAP-39** Token recovery mechanism
+- [x] **GAP-39** Token recovery mechanism ✅
   - Design doc: Implies token can be retrieved from keychain
-  - Current: `retrieveGatewayTokenFromKeychain()` exists but no CLI command to show current token
-  - Should: `moltbot gateway token show` command for recovery
-  - Priority: Low
+  - **Completed**: 2026-01-30
+  - Implementation: Added `moltbot gateway token show` command in `src/cli/gateway-cli/register.ts`
+  - Retrieves token from keychain (preferred) or config file (fallback)
+  - Supports `--json` output
 
 #### Secure Enclave Gaps (Design Doc line 307)
 
