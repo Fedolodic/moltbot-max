@@ -464,6 +464,38 @@ export const AgentEntrySchema = z
   })
   .strict();
 
+/**
+ * Configuration for a single dangerous tool.
+ * These tools are disabled by default and require explicit opt-in.
+ */
+const DangerousToolConfigSchema = z
+  .object({
+    /** Enable this dangerous tool (default: false for security). */
+    enabled: z.boolean().optional().default(false),
+    /** Require per-invocation approval before execution (default: true). */
+    requireApproval: z.boolean().optional().default(true),
+  })
+  .strict()
+  .optional();
+
+/**
+ * Configuration for all dangerous tools.
+ * Part of security hardening (3.3.2) - dangerous tools require explicit opt-in.
+ */
+export const DangerousToolsSchema = z
+  .object({
+    /** Browser automation tool (Playwright/Puppeteer). */
+    browser: DangerousToolConfigSchema,
+    /** Canvas/drawing tool. */
+    canvas: DangerousToolConfigSchema,
+    /** Scheduled task execution (cron). */
+    cron: DangerousToolConfigSchema,
+    /** Shell command execution. */
+    exec: DangerousToolConfigSchema,
+  })
+  .strict()
+  .optional();
+
 export const ToolsSchema = z
   .object({
     profile: ToolProfileSchema,
@@ -471,6 +503,7 @@ export const ToolsSchema = z
     alsoAllow: z.array(z.string()).optional(),
     deny: z.array(z.string()).optional(),
     byProvider: z.record(z.string(), ToolPolicyWithProfileSchema).optional(),
+    dangerousTools: DangerousToolsSchema,
     web: ToolsWebSchema,
     media: ToolsMediaSchema,
     links: ToolsLinksSchema,

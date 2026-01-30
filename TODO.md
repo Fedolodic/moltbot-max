@@ -700,10 +700,15 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
     - Updated runtime fallback in `resolveEffectiveToolPolicy()` in `src/agents/pi-tools.policy.ts`
     - Updated type comments in `src/config/types.tools.ts`
 
-- [ ] **3.3.2** Implement `tools.dangerousTools` config
+- [x] **3.3.2** Implement `tools.dangerousTools` config ✅
   - Dependencies: None
   - Tools: browser, canvas, cron, exec
   - Each has: enabled (default false), requireApproval (default true)
+  - **Completed**: 2026-01-30
+  - Implementation:
+    - Added `DangerousToolConfig` and `DangerousToolsConfig` types in `src/config/types.tools.ts`
+    - Added `DangerousToolsSchema` Zod schema in `src/config/zod-schema.agent-runtime.ts`
+    - Added `dangerousTools` field to `ToolsConfig` type and `ToolsSchema`
 
 - [ ] **3.3.3** Implement approval flow for dangerous tool invocation
   - Dependencies: 3.3.2

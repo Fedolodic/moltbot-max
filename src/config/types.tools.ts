@@ -138,6 +138,32 @@ export type MediaToolsConfig = {
 
 export type ToolProfileId = "minimal" | "coding" | "messaging" | "full";
 
+/**
+ * Configuration for a dangerous tool that requires explicit opt-in.
+ * Part of security hardening (3.3.2) - dangerous tools are disabled by default.
+ */
+export type DangerousToolConfig = {
+  /** Enable this dangerous tool (default: false for security). */
+  enabled?: boolean;
+  /** Require per-invocation approval before execution (default: true). */
+  requireApproval?: boolean;
+};
+
+/**
+ * Configuration for all dangerous tools.
+ * These tools require explicit opt-in and optional per-invocation approval.
+ */
+export type DangerousToolsConfig = {
+  /** Browser automation tool (Playwright/Puppeteer). */
+  browser?: DangerousToolConfig;
+  /** Canvas/drawing tool. */
+  canvas?: DangerousToolConfig;
+  /** Scheduled task execution (cron). */
+  cron?: DangerousToolConfig;
+  /** Shell command execution. */
+  exec?: DangerousToolConfig;
+};
+
 export type ToolPolicyConfig = {
   allow?: string[];
   /**
@@ -332,6 +358,12 @@ export type ToolsConfig = {
   deny?: string[];
   /** Optional tool policy overrides keyed by provider id or "provider/model". */
   byProvider?: Record<string, ToolPolicyConfig>;
+  /**
+   * Dangerous tools configuration.
+   * These tools require explicit opt-in (enabled: true) and optionally per-invocation approval.
+   * Default: all disabled with requireApproval: true.
+   */
+  dangerousTools?: DangerousToolsConfig;
   web?: {
     search?: {
       /** Enable web search tool (default: true when API key is present). */
