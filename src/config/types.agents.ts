@@ -38,6 +38,7 @@ export type AgentConfig = {
     model?: string | { primary?: string; fallbacks?: string[] };
   };
   sandbox?: {
+    /** Enable sandboxing for sessions (default: "all" for security). */
     mode?: "off" | "non-main" | "all";
     /** Agent workspace access inside the sandbox. */
     workspaceAccess?: "none" | "ro" | "rw";

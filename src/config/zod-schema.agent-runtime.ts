@@ -231,7 +231,11 @@ export const ElevatedAllowFromSchema = z
 
 export const AgentSandboxSchema = z
   .object({
-    mode: z.union([z.literal("off"), z.literal("non-main"), z.literal("all")]).optional(),
+    /** Enable sandboxing for sessions (default: "all" for security). */
+    mode: z
+      .union([z.literal("off"), z.literal("non-main"), z.literal("all")])
+      .optional()
+      .default("all"),
     workspaceAccess: z.union([z.literal("none"), z.literal("ro"), z.literal("rw")]).optional(),
     sessionToolsVisibility: z.union([z.literal("spawned"), z.literal("all")]).optional(),
     scope: z.union([z.literal("session"), z.literal("agent"), z.literal("shared")]).optional(),

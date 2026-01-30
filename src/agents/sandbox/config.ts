@@ -139,7 +139,8 @@ export function resolveSandboxConfigForAgent(cfg?: MoltbotConfig, agentId?: stri
   const toolPolicy = resolveSandboxToolPolicyForAgent(cfg, agentId);
 
   return {
-    mode: agentSandbox?.mode ?? agent?.mode ?? "off",
+    // Default to "all" for security-by-default (GAP-37 hardening)
+    mode: agentSandbox?.mode ?? agent?.mode ?? "all",
     scope,
     workspaceAccess: agentSandbox?.workspaceAccess ?? agent?.workspaceAccess ?? "none",
     workspaceRoot:

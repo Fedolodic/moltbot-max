@@ -205,9 +205,9 @@ export type AgentDefaultsConfig = {
     /** Default model selection for spawned sub-agents (string or {primary,fallbacks}). */
     model?: string | { primary?: string; fallbacks?: string[] };
   };
-  /** Optional sandbox settings for non-main sessions. */
+  /** Optional sandbox settings for sessions. */
   sandbox?: {
-    /** Enable sandboxing for sessions. */
+    /** Enable sandboxing for sessions (default: "all" for security). */
     mode?: "off" | "non-main" | "all";
     /**
      * Agent workspace access inside the sandbox.
