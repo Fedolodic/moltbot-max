@@ -206,9 +206,15 @@ export const ToolsWebSchema = z
   .strict()
   .optional();
 
+/**
+ * Tool profile for restricting available tools.
+ * Default: 'minimal' for security hardening (only session_status allowed).
+ * Use 'coding' for full file system and runtime tools.
+ */
 export const ToolProfileSchema = z
   .union([z.literal("minimal"), z.literal("coding"), z.literal("messaging"), z.literal("full")])
-  .optional();
+  .optional()
+  .default("minimal");
 
 export const ToolPolicyWithProfileSchema = z
   .object({

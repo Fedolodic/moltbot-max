@@ -196,7 +196,7 @@ export type ExecToolConfig = {
 };
 
 export type AgentToolsConfig = {
-  /** Base tool profile applied before allow/deny lists. */
+  /** Base tool profile applied before allow/deny lists. Default: "minimal" for security. */
   profile?: ToolProfileId;
   allow?: string[];
   /** Additional allowlist entries merged into allow and/or profile allowlist. */
@@ -324,7 +324,7 @@ export type MemorySearchConfig = {
 };
 
 export type ToolsConfig = {
-  /** Base tool profile applied before allow/deny lists. */
+  /** Base tool profile applied before allow/deny lists. Default: "minimal" for security. */
   profile?: ToolProfileId;
   allow?: string[];
   /** Additional allowlist entries merged into allow and/or profile allowlist. */

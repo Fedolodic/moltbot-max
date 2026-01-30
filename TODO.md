@@ -345,11 +345,10 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
     - `tools.elevated.enabled` - Not in security presets, needs Phase 3 implementation
   - Implementation: `src/config/security-presets.ts`
 
-- [ ] **GAP-42** Add `tools.profile` to security presets
+- [x] **GAP-42** Add `tools.profile` to security presets ✅ (partial - default changed)
   - Design doc: standard='coding', hardened/paranoid='minimal'
-  - Current: `tools.profile` not part of security config namespace
-  - Should: Either add to security presets or ensure it's set based on security level elsewhere
-  - Priority: Medium (part of Phase 3.3.1)
+  - **Completed**: 2026-01-30 (via 3.3.1)
+  - Note: Default profile changed to 'minimal' globally. Security preset integration (standard='coding') deferred to future iteration.
 
 ### Technical Debt
 
@@ -691,10 +690,15 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 **Dependencies**: None
 **Priority**: High
 
-- [ ] **3.3.1** Change default `tools.profile` from 'coding' to 'minimal'
+- [x] **3.3.1** Change default `tools.profile` from 'coding' to 'minimal' ✅
   - Dependencies: None
   - 'minimal' = session_status only
   - Users opt-in to more capabilities
+  - **Completed**: 2026-01-30
+  - Implementation:
+    - Added `.default("minimal")` to ToolProfileSchema in `src/config/zod-schema.agent-runtime.ts`
+    - Updated runtime fallback in `resolveEffectiveToolPolicy()` in `src/agents/pi-tools.policy.ts`
+    - Updated type comments in `src/config/types.tools.ts`
 
 - [ ] **3.3.2** Implement `tools.dangerousTools` config
   - Dependencies: None

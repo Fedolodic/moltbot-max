@@ -191,7 +191,8 @@ export function resolveEffectiveToolPolicy(params: {
   const agentTools = agentConfig?.tools;
   const globalTools = params.config?.tools;
 
-  const profile = agentTools?.profile ?? globalTools?.profile;
+  // Default to 'minimal' for security hardening (3.3.1) - only session_status allowed
+  const profile = agentTools?.profile ?? globalTools?.profile ?? "minimal";
   const providerPolicy = resolveProviderToolPolicy({
     byProvider: globalTools?.byProvider,
     modelProvider: params.modelProvider,
