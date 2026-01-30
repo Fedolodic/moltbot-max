@@ -253,7 +253,8 @@ export const AgentToolsSchema = z
     byProvider: z.record(z.string(), ToolPolicyWithProfileSchema).optional(),
     elevated: z
       .object({
-        enabled: z.boolean().optional(),
+        /** Enable or disable elevated mode for this agent (default: false for security). */
+        enabled: z.boolean().optional().default(false),
         allowFrom: ElevatedAllowFromSchema,
       })
       .strict()
@@ -495,7 +496,8 @@ export const ToolsSchema = z
       .optional(),
     elevated: z
       .object({
-        enabled: z.boolean().optional(),
+        /** Enable or disable elevated mode (default: false for security). */
+        enabled: z.boolean().optional().default(false),
         allowFrom: ElevatedAllowFromSchema,
       })
       .strict()

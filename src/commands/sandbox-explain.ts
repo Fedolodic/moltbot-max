@@ -149,7 +149,7 @@ export async function sandboxExplainCommand(
   const agentConfig = resolveAgentConfig(cfg, resolvedAgentId);
   const elevatedGlobal = cfg.tools?.elevated;
   const elevatedAgent = agentConfig?.tools?.elevated;
-  const elevatedGlobalEnabled = elevatedGlobal?.enabled !== false;
+  const elevatedGlobalEnabled = elevatedGlobal?.enabled === true;
   const elevatedAgentEnabled = elevatedAgent?.enabled !== false;
   const elevatedEnabled = elevatedGlobalEnabled && elevatedAgentEnabled;
 

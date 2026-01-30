@@ -111,7 +111,7 @@ export function resolveElevatedPermissions(params: {
 } {
   const globalConfig = params.cfg.tools?.elevated;
   const agentConfig = resolveAgentConfig(params.cfg, params.agentId)?.tools?.elevated;
-  const globalEnabled = globalConfig?.enabled !== false;
+  const globalEnabled = globalConfig?.enabled === true;
   const agentEnabled = agentConfig?.enabled !== false;
   const enabled = globalEnabled && agentEnabled;
   const failures: Array<{ gate: string; key: string }> = [];

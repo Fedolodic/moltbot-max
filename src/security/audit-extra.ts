@@ -71,7 +71,7 @@ function summarizeGroupPolicy(cfg: MoltbotConfig): {
 
 export function collectAttackSurfaceSummaryFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
   const group = summarizeGroupPolicy(cfg);
-  const elevated = cfg.tools?.elevated?.enabled !== false;
+  const elevated = cfg.tools?.elevated?.enabled === true;
   const hooksEnabled = cfg.hooks?.enabled === true;
   const browserEnabled = cfg.browser?.enabled ?? true;
 
@@ -931,7 +931,7 @@ export function collectExposureMatrixFindings(cfg: MoltbotConfig): SecurityAudit
   const openGroups = listGroupPolicyOpen(cfg);
   if (openGroups.length === 0) return findings;
 
-  const elevatedEnabled = cfg.tools?.elevated?.enabled !== false;
+  const elevatedEnabled = cfg.tools?.elevated?.enabled === true;
   if (elevatedEnabled) {
     findings.push({
       checkId: "security.exposure.open_groups_with_elevated",

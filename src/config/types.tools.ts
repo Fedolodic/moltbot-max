@@ -206,7 +206,7 @@ export type AgentToolsConfig = {
   byProvider?: Record<string, ToolPolicyConfig>;
   /** Per-agent elevated exec gate (can only further restrict global tools.elevated). */
   elevated?: {
-    /** Enable or disable elevated mode for this agent (default: true). */
+    /** Enable or disable elevated mode for this agent (default: false). */
     enabled?: boolean;
     /** Approved senders for /elevated (per-provider allowlists). */
     allowFrom?: AgentElevatedAllowFromConfig;
@@ -424,7 +424,7 @@ export type ToolsConfig = {
   };
   /** Elevated exec permissions for the host machine. */
   elevated?: {
-    /** Enable or disable elevated mode (default: true). */
+    /** Enable or disable elevated mode (default: false). */
     enabled?: boolean;
     /** Approved senders for /elevated (per-provider allowlists). */
     allowFrom?: AgentElevatedAllowFromConfig;
