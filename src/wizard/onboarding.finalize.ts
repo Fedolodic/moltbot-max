@@ -305,7 +305,7 @@ export async function finalizeOnboardingWizard(options: FinalizeOnboardingOption
     await prompter.note(
       [
         "Gateway token: shared auth for the Gateway + Control UI.",
-        "Stored in: ~/.clawdbot/moltbot.json (gateway.auth.token) or CLAWDBOT_GATEWAY_TOKEN.",
+        "Stored in: keychain (secure), config file, or CLAWDBOT_GATEWAY_TOKEN env var.",
         "Web UI stores a copy in this browser's localStorage (moltbot.control.settings.v1).",
         `Get the tokenized link anytime: ${formatCliCommand("moltbot dashboard --no-open")}`,
       ].join("\n"),

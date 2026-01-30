@@ -1,6 +1,7 @@
-import { randomToken } from "../commands/onboard-helpers.js";
+import { randomToken, storeGatewayTokenInKeychain } from "../commands/onboard-helpers.js";
 import type { GatewayAuthChoice } from "../commands/onboard-types.js";
 import type { MoltbotConfig } from "../config/config.js";
+import { validateToken, MIN_TOKEN_LENGTH } from "../gateway/token.js";
 import { findTailscaleBinary } from "../infra/tailscale.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type {
@@ -9,6 +10,13 @@ import type {
   WizardFlow,
 } from "./onboarding.types.js";
 import type { WizardPrompter } from "./prompts.js";
+
+/** Whether the gateway token was stored in keychain. */
+export type KeychainStorageInfo = {
+  stored: boolean;
+  backend?: string;
+  error?: string;
+};
 
 type ConfigureGatewayOptions = {
   flow: WizardFlow;
@@ -23,6 +31,7 @@ type ConfigureGatewayOptions = {
 type ConfigureGatewayResult = {
   nextConfig: MoltbotConfig;
   settings: GatewayWizardSettings;
+  keychainStorage?: KeychainStorageInfo;
 };
 
 export async function configureGatewayForOnboarding(
@@ -177,10 +186,36 @@ export async function configureGatewayForOnboarding(
     } else {
       const tokenInput = await prompter.text({
         message: "Gateway token (blank to generate)",
-        placeholder: "Needed for multi-machine or non-loopback access",
+        placeholder: `Min ${MIN_TOKEN_LENGTH} chars. Leave blank for secure auto-generation.`,
         initialValue: quickstartGateway.token ?? "",
+        validate: (value) => {
+          if (!value || !value.trim()) return undefined; // Blank is OK (will generate)
+          const result = validateToken(value.trim());
+          if (!result.valid && result.errors.length > 0) {
+            return result.errors[0];
+          }
+          return undefined;
+        },
       });
-      gatewayToken = String(tokenInput).trim() || randomToken();
+      const inputToken = String(tokenInput).trim();
+      if (inputToken) {
+        gatewayToken = inputToken;
+        // Warn about weak patterns but allow the token
+        const validation = validateToken(inputToken);
+        if (validation.warnings.length > 0) {
+          await prompter.note(
+            [
+              "Token security notice:",
+              ...validation.warnings.map((w) => `  - ${w}`),
+              "",
+              "Consider using a stronger token for better security.",
+            ].join("\n"),
+            "Warning",
+          );
+        }
+      } else {
+        gatewayToken = randomToken();
+      }
     }
   }
 
@@ -217,6 +252,17 @@ export async function configureGatewayForOnboarding(
     };
   }
 
+  // Store gateway token in keychain for native app access
+  let keychainStorage: KeychainStorageInfo | undefined;
+  if (authMode === "token" && gatewayToken) {
+    const result = await storeGatewayTokenInKeychain(gatewayToken);
+    keychainStorage = {
+      stored: result.ok,
+      backend: result.backend,
+      error: result.error,
+    };
+  }
+
   nextConfig = {
     ...nextConfig,
     gateway: {
@@ -243,5 +289,6 @@ export async function configureGatewayForOnboarding(
       tailscaleMode,
       tailscaleResetOnExit,
     },
+    keychainStorage,
   };
 }
