@@ -19,6 +19,15 @@ export function createEventHandlers(context: EventHandlerContext) {
   let streamAssembler = new TuiStreamAssembler();
   let lastSessionKey = state.currentSessionKey;
 
+  // Helper to clear the run timeout when a run completes
+  const clearRunTimeout = () => {
+    const storedTimeout = (state as TuiStateAccess & { _runTimeout?: NodeJS.Timeout })._runTimeout;
+    if (storedTimeout) {
+      clearTimeout(storedTimeout);
+      (state as TuiStateAccess & { _runTimeout?: NodeJS.Timeout })._runTimeout = undefined;
+    }
+  };
+
   const pruneRunMap = (runs: Map<string, number>) => {
     if (runs.size <= 200) return;
     const keepUntil = Date.now() - 10 * 60 * 1000;
@@ -80,6 +89,7 @@ export function createEventHandlers(context: EventHandlerContext) {
         streamAssembler.drop(evt.runId);
         noteFinalizedRun(evt.runId);
         state.activeChatRunId = null;
+        clearRunTimeout();
         setActivityStatus("idle");
         void refreshSessionInfo?.();
         tui.requestRender();
@@ -96,6 +106,7 @@ export function createEventHandlers(context: EventHandlerContext) {
       chatLog.finalizeAssistant(finalText, evt.runId);
       noteFinalizedRun(evt.runId);
       state.activeChatRunId = null;
+      clearRunTimeout();
       setActivityStatus(stopReason === "error" ? "error" : "idle");
       // Refresh session info to update token counts in footer
       void refreshSessionInfo?.();
@@ -105,6 +116,7 @@ export function createEventHandlers(context: EventHandlerContext) {
       streamAssembler.drop(evt.runId);
       sessionRuns.delete(evt.runId);
       state.activeChatRunId = null;
+      clearRunTimeout();
       setActivityStatus("aborted");
       void refreshSessionInfo?.();
     }
@@ -113,6 +125,7 @@ export function createEventHandlers(context: EventHandlerContext) {
       streamAssembler.drop(evt.runId);
       sessionRuns.delete(evt.runId);
       state.activeChatRunId = null;
+      clearRunTimeout();
       setActivityStatus("error");
       void refreshSessionInfo?.();
     }
@@ -148,12 +161,36 @@ export function createEventHandlers(context: EventHandlerContext) {
       return;
     }
     if (evt.stream === "lifecycle") {
-      if (!isActiveRun) return;
+      // For lifecycle events, we should still process them even if activeChatRunId has been
+      // cleared by a racing chat.final event. The sessionRuns check at the top of the function
+      // already allows these events through.
       const phase = typeof evt.data?.phase === "string" ? evt.data.phase : "";
-      if (phase === "start") setActivityStatus("running");
-      if (phase === "end") setActivityStatus("idle");
-      if (phase === "error") setActivityStatus("error");
-      tui.requestRender();
+      let handled = false;
+      if (phase === "start") {
+        if (isActiveRun) {
+          setActivityStatus("running");
+          handled = true;
+        }
+      } else if (phase === "end") {
+        // Only clear status if this is the active run OR there's no active run
+        // (meaning a chat.final already cleared it but we still want to ensure idle status)
+        if (isActiveRun || !state.activeChatRunId) {
+          state.activeChatRunId = null;
+          clearRunTimeout();
+          setActivityStatus("idle");
+          handled = true;
+        }
+      } else if (phase === "error") {
+        if (isActiveRun || !state.activeChatRunId) {
+          state.activeChatRunId = null;
+          clearRunTimeout();
+          setActivityStatus("error");
+          handled = true;
+        }
+      }
+      if (handled) {
+        tui.requestRender();
+      }
     }
   };
 

@@ -4,14 +4,14 @@ import { createCommandHandlers } from "./tui-command-handlers.js";
 
 describe("tui command handlers", () => {
   it("forwards unknown slash commands to the gateway", async () => {
-    const sendChat = vi.fn().mockResolvedValue({ runId: "r1" });
+    const sendChatWithRunId = vi.fn().mockResolvedValue(undefined);
     const addUser = vi.fn();
     const addSystem = vi.fn();
     const requestRender = vi.fn();
     const setActivityStatus = vi.fn();
 
     const { handleCommand } = createCommandHandlers({
-      client: { sendChat } as never,
+      client: { sendChatWithRunId } as never,
       chatLog: { addUser, addSystem } as never,
       tui: { requestRender } as never,
       opts: {},
@@ -36,10 +36,11 @@ describe("tui command handlers", () => {
 
     expect(addSystem).not.toHaveBeenCalled();
     expect(addUser).toHaveBeenCalledWith("/context");
-    expect(sendChat).toHaveBeenCalledWith(
+    expect(sendChatWithRunId).toHaveBeenCalledWith(
       expect.objectContaining({
         sessionKey: "agent:main:main",
         message: "/context",
+        runId: expect.any(String),
       }),
     );
     expect(requestRender).toHaveBeenCalled();

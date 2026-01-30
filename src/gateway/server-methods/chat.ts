@@ -421,14 +421,24 @@ export const chatHandlers: GatewayRequestHandlers = {
       return;
     }
 
+    // Resolve sessionId for the abort controller entry (used for cleanup lookup).
+    const sessionId = entry?.sessionId ?? clientRunId;
+
     try {
       const abortController = new AbortController();
       context.chatAbortControllers.set(clientRunId, {
         controller: abortController,
-        sessionId: entry?.sessionId ?? clientRunId,
+        sessionId,
         sessionKey: p.sessionKey,
         startedAtMs: now,
         expiresAtMs: resolveChatRunExpiresAtMs({ now, timeoutMs }),
+      });
+
+      // Register the chat run mapping so agent events can be properly routed.
+      // The key is clientRunId because that's what the agent uses as its runId for events.
+      context.addChatRun(clientRunId, {
+        sessionKey: p.sessionKey,
+        clientRunId,
       });
 
       const ackPayload = {
@@ -574,6 +584,7 @@ export const chatHandlers: GatewayRequestHandlers = {
         })
         .finally(() => {
           context.chatAbortControllers.delete(clientRunId);
+          context.removeChatRun(clientRunId, clientRunId, p.sessionKey);
         });
     } catch (err) {
       const error = errorShape(ErrorCodes.UNAVAILABLE, String(err));

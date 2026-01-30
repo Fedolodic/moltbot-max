@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Component, TUI } from "@mariozechner/pi-tui";
 import {
   formatThinkingLevels,
@@ -445,16 +446,60 @@ export function createCommandHandlers(context: CommandHandlerContext) {
       chatLog.addUser(text);
       tui.requestRender();
       setActivityStatus("sending");
-      const { runId } = await client.sendChat({
-        sessionKey: state.currentSessionKey,
-        message: text,
-        thinking: opts.thinking,
-        deliver: deliverDefault,
-        timeoutMs: opts.timeoutMs,
-      });
+      // Generate runId before the request so we can set activeChatRunId immediately.
+      // This prevents a race condition where agent events arrive before sendChat() returns.
+      const runId = randomUUID();
       state.activeChatRunId = runId;
-      setActivityStatus("waiting");
+
+      // Set up a timeout to detect hung runs. The gateway has its own timeout, but this
+      // provides a fallback in case events don't arrive at the TUI.
+      const requestTimeoutMs = opts.timeoutMs ?? 600_000; // default 10 minutes
+      const clientTimeoutMs = requestTimeoutMs + 30_000; // give 30s buffer beyond server timeout
+      const timeoutId = setTimeout(() => {
+        // Only reset if this is still the active run
+        if (state.activeChatRunId === runId) {
+          state.activeChatRunId = null;
+          chatLog.addSystem("run timed out - no response received");
+          setActivityStatus("timeout");
+          tui.requestRender();
+        }
+      }, clientTimeoutMs);
+
+      // Store timeout ID so we can clear it when the run completes
+      const originalRunId = state.activeChatRunId;
+
+      try {
+        await client.sendChatWithRunId({
+          sessionKey: state.currentSessionKey,
+          message: text,
+          thinking: opts.thinking,
+          deliver: deliverDefault,
+          timeoutMs: opts.timeoutMs,
+          runId,
+        });
+        setActivityStatus("waiting");
+      } finally {
+        // Clear timeout if the run completes (activeChatRunId changes)
+        // The event handlers will clear the timeout when they process final/error events
+        // But we keep the timeout running until then to detect missing events
+        // We'll clear it when activeChatRunId is cleared (in event handlers)
+        // Store the timeout so we can clear it later
+        if (state.activeChatRunId === runId) {
+          // Store timeout for later cleanup - we'll add this to state
+          (state as TuiStateAccess & { _runTimeout?: NodeJS.Timeout })._runTimeout = timeoutId;
+        } else {
+          clearTimeout(timeoutId);
+        }
+      }
     } catch (err) {
+      state.activeChatRunId = null;
+      // Clear any pending timeout
+      const storedTimeout = (state as TuiStateAccess & { _runTimeout?: NodeJS.Timeout })
+        ._runTimeout;
+      if (storedTimeout) {
+        clearTimeout(storedTimeout);
+        (state as TuiStateAccess & { _runTimeout?: NodeJS.Timeout })._runTimeout = undefined;
+      }
       chatLog.addSystem(`send failed: ${String(err)}`);
       setActivityStatus("error");
     }

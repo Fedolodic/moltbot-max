@@ -165,6 +165,17 @@ export class GatewayChatClient {
     return { runId };
   }
 
+  async sendChatWithRunId(opts: ChatSendOptions & { runId: string }): Promise<void> {
+    await this.client.request("chat.send", {
+      sessionKey: opts.sessionKey,
+      message: opts.message,
+      thinking: opts.thinking,
+      deliver: opts.deliver,
+      timeoutMs: opts.timeoutMs,
+      idempotencyKey: opts.runId,
+    });
+  }
+
   async abortChat(opts: { sessionKey: string; runId: string }) {
     return await this.client.request<{ ok: boolean; aborted: boolean }>("chat.abort", {
       sessionKey: opts.sessionKey,
