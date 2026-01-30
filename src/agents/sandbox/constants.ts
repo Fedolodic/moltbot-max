@@ -12,6 +12,11 @@ export const DEFAULT_SANDBOX_WORKDIR = "/workspace";
 export const DEFAULT_SANDBOX_IDLE_HOURS = 24;
 export const DEFAULT_SANDBOX_MAX_AGE_DAYS = 7;
 
+// Resource limits defaults (GAP-17 / 3.1.3)
+export const DEFAULT_SANDBOX_MEMORY = "2g";
+export const DEFAULT_SANDBOX_CPUS = 1;
+export const DEFAULT_SANDBOX_TIMEOUT_MS = 300_000; // 5 minutes
+
 export const DEFAULT_TOOL_ALLOW = [
   "exec",
   "process",

@@ -92,9 +92,13 @@ export const SandboxDockerSchema = z
     env: z.record(z.string(), z.string()).optional(),
     setupCommand: z.string().optional(),
     pidsLimit: z.number().int().positive().optional(),
+    /** Memory limit (e.g. "2g"). Default: "2g" for security hardening. */
     memory: z.union([z.string(), z.number()]).optional(),
     memorySwap: z.union([z.string(), z.number()]).optional(),
+    /** CPU limit (e.g. 1). Default: 1 for security hardening. */
     cpus: z.number().positive().optional(),
+    /** Per-command execution timeout in milliseconds. Default: 300000 (5 minutes). */
+    timeout: z.number().int().positive().optional(),
     ulimits: z
       .record(
         z.string(),

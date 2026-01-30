@@ -21,12 +21,14 @@ export type SandboxDockerSettings = {
   setupCommand?: string;
   /** Limit container PIDs (0 = Docker default). */
   pidsLimit?: number;
-  /** Limit container memory (e.g. 512m, 2g, or bytes as number). */
+  /** Limit container memory (e.g. 512m, 2g, or bytes as number). Default: "2g" for security hardening. */
   memory?: string | number;
   /** Limit container memory swap (same format as memory). */
   memorySwap?: string | number;
-  /** Limit container CPU shares (e.g. 0.5, 1, 2). */
+  /** Limit container CPU shares (e.g. 0.5, 1, 2). Default: 1 for security hardening. */
   cpus?: number;
+  /** Per-command execution timeout in milliseconds. Default: 300000 (5 minutes). */
+  timeout?: number;
   /**
    * Set ulimit values by name (e.g. nofile, nproc).
    * Use "soft:hard" string, a number, or { soft, hard }.
