@@ -22,6 +22,7 @@ import type { ModelsConfig } from "./types.models.js";
 import type { NodeHostConfig } from "./types.node-host.js";
 import type { PluginsConfig } from "./types.plugins.js";
 import type { SkillsConfig } from "./types.skills.js";
+import type { SecurityConfig } from "./types.security.js";
 import type { ToolsConfig } from "./types.tools.js";
 
 export type MoltbotConfig = {
@@ -91,6 +92,7 @@ export type MoltbotConfig = {
   channels?: ChannelsConfig;
   cron?: CronConfig;
   hooks?: HooksConfig;
+  security?: SecurityConfig;
   discovery?: DiscoveryConfig;
   canvasHost?: CanvasHostConfig;
   talk?: TalkConfig;

@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { inspect } from "node:util";
@@ -9,6 +8,7 @@ import { DEFAULT_AGENT_WORKSPACE_DIR, ensureAgentWorkspace } from "../agents/wor
 import type { MoltbotConfig } from "../config/config.js";
 import { CONFIG_PATH } from "../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
+import { createCredentialStore } from "../credentials/index.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { isSafeExecutableValue } from "../infra/exec-safety.js";
@@ -26,7 +26,13 @@ import {
   sleep,
 } from "../utils.js";
 import { VERSION } from "../version.js";
+import { generateAndValidateToken } from "../gateway/token.js";
 import type { NodeManagerChoice, OnboardMode, ResetScope } from "./onboard-types.js";
+
+/**
+ * Credential key for storing the gateway authentication token in keychain.
+ */
+export const GATEWAY_TOKEN_CREDENTIAL_KEY = "gateway-auth-token";
 
 export function guardCancel<T>(value: T | symbol, runtime: RuntimeEnv): T {
   if (isCancel(value)) {
@@ -58,8 +64,72 @@ export function summarizeExistingConfig(config: MoltbotConfig): string {
   return rows.length ? rows.join("\n") : "No key settings detected.";
 }
 
+/**
+ * Generate a cryptographically secure gateway token.
+ * Uses base64url encoding for URL-safe, compact output.
+ * Validates entropy before returning.
+ */
 export function randomToken(): string {
-  return crypto.randomBytes(24).toString("hex");
+  return generateAndValidateToken();
+}
+
+/**
+ * Result of storing a gateway token in keychain.
+ */
+export type StoreGatewayTokenResult = {
+  ok: boolean;
+  backend: string;
+  error?: string;
+};
+
+/**
+ * Store the gateway authentication token in the secure credential store (keychain).
+ *
+ * This provides an additional layer of protection for the gateway token beyond
+ * storing it in the config file. Native apps can retrieve the token from keychain
+ * without reading the config file.
+ *
+ * @param token - The gateway authentication token to store.
+ * @returns Result indicating success/failure and the backend used.
+ */
+export async function storeGatewayTokenInKeychain(token: string): Promise<StoreGatewayTokenResult> {
+  try {
+    const store = await createCredentialStore({ preferredBackend: "keychain" });
+
+    const result = await store.store(GATEWAY_TOKEN_CREDENTIAL_KEY, token, {
+      label: "Gateway Authentication Token",
+      tags: ["gateway", "auth", "auto-generated"],
+    });
+
+    if (!result.ok) {
+      return { ok: false, backend: store.backend, error: result.error };
+    }
+
+    return { ok: true, backend: store.backend };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    return { ok: false, backend: "unknown", error };
+  }
+}
+
+/**
+ * Retrieve the gateway authentication token from the secure credential store.
+ *
+ * @returns The token if found, or null if not stored in keychain.
+ */
+export async function retrieveGatewayTokenFromKeychain(): Promise<string | null> {
+  try {
+    const store = await createCredentialStore({ preferredBackend: "keychain" });
+    const result = await store.retrieve(GATEWAY_TOKEN_CREDENTIAL_KEY);
+
+    if (!result.ok) {
+      return null;
+    }
+
+    return result.value.value;
+  } catch {
+    return null;
+  }
 }
 
 export function printWizardHeader(runtime: RuntimeEnv) {

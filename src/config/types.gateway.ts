@@ -81,6 +81,15 @@ export type GatewayAuthConfig = {
   password?: string;
   /** Allow Tailscale identity headers when serve mode is enabled. */
   allowTailscale?: boolean;
+  /**
+   * Require authentication for loopback (localhost/127.0.0.1) connections.
+   * Default: true for 'hardened' security preset, false otherwise.
+   *
+   * When true, even connections from localhost must provide valid auth.
+   * This protects against localhost proxy bypass attacks where a malicious
+   * process on the same machine could access the gateway without auth.
+   */
+  requireAuthForLoopback?: boolean;
 };
 
 export type GatewayTailscaleMode = "off" | "serve" | "funnel";
