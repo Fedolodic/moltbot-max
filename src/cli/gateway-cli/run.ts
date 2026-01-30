@@ -39,6 +39,7 @@ type GatewayRunOpts = {
   tailscale?: unknown;
   tailscaleResetOnExit?: boolean;
   allowUnconfigured?: boolean;
+  iKnowWhatImDoing?: boolean;
   force?: boolean;
   verbose?: boolean;
   claudeCliLogs?: boolean;
@@ -243,17 +244,28 @@ async function runGatewayCommand(opts: GatewayRunOpts) {
     return;
   }
   if (bind !== "loopback" && !hasSharedSecret) {
-    defaultRuntime.error(
-      [
-        `Refusing to bind gateway to ${bind} without auth.`,
-        "Set gateway.auth.token/password (or CLAWDBOT_GATEWAY_TOKEN/CLAWDBOT_GATEWAY_PASSWORD) or pass --token/--password.",
-        ...authHints,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    );
-    defaultRuntime.exit(1);
-    return;
+    if (opts.iKnowWhatImDoing) {
+      gatewayLog.warn(`⚠️  SECURITY WARNING: Starting gateway on ${bind} without authentication.`);
+      gatewayLog.warn(
+        "⚠️  This is a security risk. Any client on the network can access your gateway.",
+      );
+      gatewayLog.warn("⚠️  Use this only for testing or local development.");
+    } else {
+      defaultRuntime.error(
+        [
+          `Refusing to bind gateway to ${bind} without auth.`,
+          "Set gateway.auth.token/password (or CLAWDBOT_GATEWAY_TOKEN/CLAWDBOT_GATEWAY_PASSWORD) or pass --token/--password.",
+          "",
+          "If you understand the security risks and want to proceed anyway,",
+          "pass --i-know-what-im-doing to override this check.",
+          ...authHints,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      );
+      defaultRuntime.exit(1);
+      return;
+    }
   }
 
   try {
@@ -329,6 +341,11 @@ export function addGatewayRunCommand(cmd: Command): Command {
     .option(
       "--allow-unconfigured",
       "Allow gateway start without gateway.mode=local in config",
+      false,
+    )
+    .option(
+      "--i-know-what-im-doing",
+      "Override security checks (e.g., allow non-loopback bind without auth). Use with caution.",
       false,
     )
     .option("--dev", "Create a dev config + workspace if missing (no BOOTSTRAP.md)", false)
