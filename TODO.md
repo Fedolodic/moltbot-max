@@ -171,10 +171,10 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Current: Only token mode assumed
   - Impact: Limited flexibility for enterprise deployments
 
-- [ ] **GAP-16** `sandbox.scope` - Missing sandbox isolation scope
+- [x] **GAP-16** `sandbox.scope` - Missing sandbox isolation scope ✅
   - Design doc: `scope: 'session' | 'agent' | 'shared'`
-  - Current: Not configurable
-  - Impact: Cannot configure per-agent isolation
+  - **Completed**: 2026-01-30 (verified via 3.1.2)
+  - Implementation: `resolveSandboxScope()` in `src/agents/sandbox/config.ts` already supports all three modes with 'agent' as default
 
 - [x] **GAP-17** `sandbox.limits` - Missing resource limits configuration ✅
   - Design doc: `limits: { memory: '2g', cpus: 1, timeout: 300_000 }`
