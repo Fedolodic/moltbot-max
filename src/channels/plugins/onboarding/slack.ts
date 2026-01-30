@@ -309,7 +309,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.slack.dm.policy",
   allowFromKey: "channels.slack.dm.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.slack?.dm?.policy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.slack?.dm?.policy ?? "allowlist",
   setPolicy: (cfg, policy) => setSlackDmPolicy(cfg, policy),
   promptAllowFrom: promptSlackAllowFrom,
 };

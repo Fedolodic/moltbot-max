@@ -287,22 +287,22 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.telegram?.dmPolicy).toBe("open");
     }
   });
-  it("defaults telegram.dmPolicy to pairing when telegram section exists", async () => {
+  it("defaults telegram.dmPolicy to allowlist when telegram section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { telegram: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.telegram?.dmPolicy).toBe("pairing");
+      expect(res.config.channels?.telegram?.dmPolicy).toBe("allowlist");
     }
   });
-  it("defaults telegram.groupPolicy to allowlist when telegram section exists", async () => {
+  it("defaults telegram.groupPolicy to disabled when telegram section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { telegram: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.telegram?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.telegram?.groupPolicy).toBe("disabled");
     }
   });
   it("defaults telegram.streamMode to partial when telegram section exists", async () => {
@@ -338,22 +338,22 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.whatsapp?.dmPolicy).toBe("open");
     }
   });
-  it("defaults whatsapp.dmPolicy to pairing when whatsapp section exists", async () => {
+  it("defaults whatsapp.dmPolicy to allowlist when whatsapp section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { whatsapp: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.whatsapp?.dmPolicy).toBe("pairing");
+      expect(res.config.channels?.whatsapp?.dmPolicy).toBe("allowlist");
     }
   });
-  it("defaults whatsapp.groupPolicy to allowlist when whatsapp section exists", async () => {
+  it("defaults whatsapp.groupPolicy to disabled when whatsapp section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { whatsapp: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.whatsapp?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.whatsapp?.groupPolicy).toBe("disabled");
     }
   });
   it('rejects signal.dmPolicy="open" without allowFrom "*"', async () => {
@@ -378,22 +378,22 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.signal?.dmPolicy).toBe("open");
     }
   });
-  it("defaults signal.dmPolicy to pairing when signal section exists", async () => {
+  it("defaults signal.dmPolicy to allowlist when signal section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { signal: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.signal?.dmPolicy).toBe("pairing");
+      expect(res.config.channels?.signal?.dmPolicy).toBe("allowlist");
     }
   });
-  it("defaults signal.groupPolicy to allowlist when signal section exists", async () => {
+  it("defaults signal.groupPolicy to disabled when signal section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { signal: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.signal?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.signal?.groupPolicy).toBe("disabled");
     }
   });
   it("accepts historyLimit overrides per provider and account", async () => {

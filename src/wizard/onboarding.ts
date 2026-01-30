@@ -402,18 +402,39 @@ export async function runOnboardingWizard(
   nextConfig = gateway.nextConfig;
   const settings = gateway.settings;
 
+  // Notify user about keychain storage
+  if (gateway.keychainStorage) {
+    if (gateway.keychainStorage.stored) {
+      await prompter.note(
+        [
+          `Gateway token stored in ${gateway.keychainStorage.backend}.`,
+          "Native apps (macOS, iOS, Android) can retrieve the token automatically.",
+          "The token is also stored in: ~/.clawdbot/moltbot.json (gateway.auth.token).",
+        ].join("\n"),
+        "Secure token storage",
+      );
+    } else if (gateway.keychainStorage.error) {
+      // Non-fatal: token is still in config file
+      await prompter.note(
+        [
+          `Could not store token in keychain: ${gateway.keychainStorage.error}`,
+          "Token will be stored in config file only.",
+          "Native apps may need manual token configuration.",
+        ].join("\n"),
+        "Keychain storage",
+      );
+    }
+  }
+
   if (opts.skipChannels ?? opts.skipProviders) {
     await prompter.note("Skipping channel setup.", "Channels");
   } else {
-    const quickstartAllowFromChannels =
-      flow === "quickstart"
-        ? listChannelPlugins()
-            .filter((plugin) => plugin.meta.quickstartAllowFrom)
-            .map((plugin) => plugin.id)
-        : [];
+    // GAP-31/32: Default dmPolicy is "allowlist" - always prompt for allowFrom
+    // during channel setup to auto-add onboarding user to allowlist
+    const allChannelIds = listChannelPlugins().map((plugin) => plugin.id);
     nextConfig = await setupChannels(nextConfig, runtime, prompter, {
       allowSignalInstall: true,
-      forceAllowFromChannels: quickstartAllowFromChannels,
+      forceAllowFromChannels: allChannelIds,
       skipDmPolicyPrompt: flow === "quickstart",
       skipConfirm: flow === "quickstart",
       quickstartDefaults: flow === "quickstart",

@@ -186,7 +186,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.telegram.dmPolicy",
   allowFromKey: "channels.telegram.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.telegram?.dmPolicy ?? "allowlist",
   setPolicy: (cfg, policy) => setTelegramDmPolicy(cfg, policy),
   promptAllowFrom: promptTelegramAllowFromForAccount,
 };

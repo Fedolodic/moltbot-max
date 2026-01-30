@@ -139,7 +139,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.signal.dmPolicy",
   allowFromKey: "channels.signal.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.signal?.dmPolicy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.signal?.dmPolicy ?? "allowlist",
   setPolicy: (cfg, policy) => setSignalDmPolicy(cfg, policy),
   promptAllowFrom: promptSignalAllowFrom,
 };

@@ -135,7 +135,7 @@ const dmPolicy: ChannelOnboardingDmPolicy = {
   channel,
   policyKey: "channels.imessage.dmPolicy",
   allowFromKey: "channels.imessage.allowFrom",
-  getCurrent: (cfg) => cfg.channels?.imessage?.dmPolicy ?? "pairing",
+  getCurrent: (cfg) => cfg.channels?.imessage?.dmPolicy ?? "allowlist",
   setPolicy: (cfg, policy) => setIMessageDmPolicy(cfg, policy),
   promptAllowFrom: promptIMessageAllowFrom,
 };

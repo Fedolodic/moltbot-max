@@ -187,8 +187,9 @@ async function noteChannelPrimer(
   );
   await prompter.note(
     [
-      "DM security: default is pairing; unknown DMs get a pairing code.",
-      `Approve with: ${formatCliCommand("moltbot pairing approve <channel> <code>")}`,
+      "DM security: default is allowlist; you must add authorized users during setup.",
+      "During channel setup, you'll be prompted to add your user ID to the allowlist.",
+      'To allow pairing mode: set dmPolicy="pairing" in config.',
       'Public DMs require dmPolicy="open" + allowFrom=["*"].',
       'Multi-user DMs: set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
       `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
@@ -225,7 +226,7 @@ async function maybeConfigureDmPolicies(params: {
   if (dmPolicies.length === 0) return params.cfg;
 
   const wants = await prompter.confirm({
-    message: "Configure DM access policies now? (default: pairing)",
+    message: "Configure DM access policies now? (default: allowlist)",
     initialValue: false,
   });
   if (!wants) return params.cfg;
@@ -234,9 +235,9 @@ async function maybeConfigureDmPolicies(params: {
   const selectPolicy = async (policy: ChannelOnboardingDmPolicy) => {
     await prompter.note(
       [
-        "Default: pairing (unknown DMs get a pairing code).",
-        `Approve: ${formatCliCommand(`moltbot pairing approve ${policy.channel} <code>`)}`,
-        `Allowlist DMs: ${policy.policyKey}="allowlist" + ${policy.allowFromKey} entries.`,
+        "Default: allowlist (only users in allowFrom can DM the bot).",
+        `Pairing mode: ${policy.policyKey}="pairing" (unknown DMs get a pairing code).`,
+        `Approve pairing: ${formatCliCommand(`moltbot pairing approve ${policy.channel} <code>`)}`,
         `Public DMs: ${policy.policyKey}="open" + ${policy.allowFromKey} includes "*".`,
         'Multi-user DMs: set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
         `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
@@ -246,8 +247,8 @@ async function maybeConfigureDmPolicies(params: {
     return (await prompter.select({
       message: `${policy.label} DM policy`,
       options: [
-        { value: "pairing", label: "Pairing (recommended)" },
-        { value: "allowlist", label: "Allowlist (specific users only)" },
+        { value: "allowlist", label: "Allowlist (recommended - specific users only)" },
+        { value: "pairing", label: "Pairing (unknown DMs get pairing code)" },
         { value: "open", label: "Open (public inbound DMs)" },
         { value: "disabled", label: "Disabled (ignore DMs)" },
       ],

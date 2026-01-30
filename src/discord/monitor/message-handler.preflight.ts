@@ -87,7 +87,7 @@ export async function preflightDiscordMessage(
     return null;
   }
 
-  const dmPolicy = params.discordConfig?.dm?.policy ?? "pairing";
+  const dmPolicy = params.discordConfig?.dm?.policy ?? "allowlist";
   let commandAuthorized = true;
   if (isDirectMessage) {
     if (dmPolicy === "disabled") {

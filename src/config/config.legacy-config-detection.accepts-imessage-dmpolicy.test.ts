@@ -15,49 +15,49 @@ describe("legacy config detection", () => {
       expect(res.config.channels?.imessage?.dmPolicy).toBe("open");
     }
   });
-  it("defaults imessage.dmPolicy to pairing when imessage section exists", async () => {
+  it("defaults imessage.dmPolicy to allowlist when imessage section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { imessage: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.imessage?.dmPolicy).toBe("pairing");
+      expect(res.config.channels?.imessage?.dmPolicy).toBe("allowlist");
     }
   });
-  it("defaults imessage.groupPolicy to allowlist when imessage section exists", async () => {
+  it("defaults imessage.groupPolicy to disabled when imessage section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { imessage: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.imessage?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.imessage?.groupPolicy).toBe("disabled");
     }
   });
-  it("defaults discord.groupPolicy to allowlist when discord section exists", async () => {
+  it("defaults discord.groupPolicy to disabled when discord section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { discord: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.discord?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.discord?.groupPolicy).toBe("disabled");
     }
   });
-  it("defaults slack.groupPolicy to allowlist when slack section exists", async () => {
+  it("defaults slack.groupPolicy to disabled when slack section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { slack: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.slack?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.slack?.groupPolicy).toBe("disabled");
     }
   });
-  it("defaults msteams.groupPolicy to allowlist when msteams section exists", async () => {
+  it("defaults msteams.groupPolicy to disabled when msteams section exists", async () => {
     vi.resetModules();
     const { validateConfigObject } = await import("./config.js");
     const res = validateConfigObject({ channels: { msteams: {} } });
     expect(res.ok).toBe(true);
     if (res.ok) {
-      expect(res.config.channels?.msteams?.groupPolicy).toBe("allowlist");
+      expect(res.config.channels?.msteams?.groupPolicy).toBe("disabled");
     }
   });
   it("rejects unsafe executable config values", async () => {

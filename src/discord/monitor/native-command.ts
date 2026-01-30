@@ -586,7 +586,7 @@ async function dispatchDiscordCommandInteraction(params: {
     }
   }
   const dmEnabled = discordConfig?.dm?.enabled ?? true;
-  const dmPolicy = discordConfig?.dm?.policy ?? "pairing";
+  const dmPolicy = discordConfig?.dm?.policy ?? "allowlist";
   let commandAuthorized = true;
   if (isDirectMessage) {
     if (!dmEnabled || dmPolicy === "disabled") {

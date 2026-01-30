@@ -319,8 +319,10 @@ export const MoltbotSchema = z
           .object({
             enabled: z.boolean().optional(),
             basePath: z.string().optional(),
-            allowInsecureAuth: z.boolean().optional(),
-            dangerouslyDisableDeviceAuth: z.boolean().optional(),
+            /** Allow token-only auth over insecure HTTP (default: false for security). */
+            allowInsecureAuth: z.boolean().optional().default(false),
+            /** DANGEROUS: Disable device identity checks (default: false for security). */
+            dangerouslyDisableDeviceAuth: z.boolean().optional().default(false),
           })
           .strict()
           .optional(),
@@ -330,6 +332,7 @@ export const MoltbotSchema = z
             token: z.string().optional(),
             password: z.string().optional(),
             allowTailscale: z.boolean().optional(),
+            requireAuthForLoopback: z.boolean().optional(),
           })
           .strict()
           .optional(),
