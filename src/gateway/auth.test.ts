@@ -99,4 +99,82 @@ describe("gateway auth", () => {
     expect(res.method).toBe("tailscale");
     expect(res.user).toBe("peter");
   });
+
+  describe("requireAuthForLoopback", () => {
+    it("requires auth for loopback by default (requireAuthForLoopback=true)", async () => {
+      const res = await authorizeGatewayConnect({
+        auth: { mode: "token", token: "secret", allowTailscale: false },
+        connectAuth: null, // No auth provided
+        req: {
+          socket: { remoteAddress: "127.0.0.1" },
+          headers: { host: "localhost:18789" },
+        } as never,
+        // requireAuthForLoopback defaults to true
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe("token_missing");
+    });
+
+    it("skips auth for loopback when requireAuthForLoopback=false", async () => {
+      const res = await authorizeGatewayConnect({
+        auth: { mode: "token", token: "secret", allowTailscale: false },
+        connectAuth: null, // No auth provided
+        req: {
+          socket: { remoteAddress: "127.0.0.1" },
+          headers: { host: "localhost:18789" },
+        } as never,
+        requireAuthForLoopback: false,
+      });
+
+      expect(res.ok).toBe(true);
+      expect(res.user).toBe("local");
+    });
+
+    it("still requires auth for non-loopback even when requireAuthForLoopback=false", async () => {
+      const res = await authorizeGatewayConnect({
+        auth: { mode: "token", token: "secret", allowTailscale: false },
+        connectAuth: null, // No auth provided
+        req: {
+          socket: { remoteAddress: "192.168.1.100" },
+          headers: { host: "myserver.local:18789" },
+        } as never,
+        requireAuthForLoopback: false,
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe("token_missing");
+    });
+
+    it("requires auth for loopback when requireAuthForLoopback=true explicitly", async () => {
+      const res = await authorizeGatewayConnect({
+        auth: { mode: "token", token: "secret", allowTailscale: false },
+        connectAuth: null,
+        req: {
+          socket: { remoteAddress: "127.0.0.1" },
+          headers: { host: "localhost:18789" },
+        } as never,
+        requireAuthForLoopback: true,
+      });
+
+      expect(res.ok).toBe(false);
+      expect(res.reason).toBe("token_missing");
+    });
+
+    it("allows valid token auth for loopback regardless of requireAuthForLoopback", async () => {
+      // With requireAuthForLoopback: true
+      const resWithAuth = await authorizeGatewayConnect({
+        auth: { mode: "token", token: "secret", allowTailscale: false },
+        connectAuth: { token: "secret" },
+        req: {
+          socket: { remoteAddress: "127.0.0.1" },
+          headers: { host: "localhost:18789" },
+        } as never,
+        requireAuthForLoopback: true,
+      });
+
+      expect(resWithAuth.ok).toBe(true);
+      expect(resWithAuth.method).toBe("token");
+    });
+  });
 });

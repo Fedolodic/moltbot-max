@@ -569,6 +569,7 @@ export function attachGatewayWsMessageHandler(params: {
           connectAuth: connectParams.auth,
           req: upgradeReq,
           trustedProxies,
+          requireAuthForLoopback: configSnapshot.gateway?.auth?.requireAuthForLoopback ?? true,
         });
         let authOk = authResult.ok;
         let authMethod =

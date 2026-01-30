@@ -202,10 +202,24 @@ export async function authorizeGatewayConnect(params: {
   req?: IncomingMessage;
   trustedProxies?: string[];
   tailscaleWhois?: TailscaleWhoisLookup;
+  /**
+   * Whether to require authentication for loopback connections.
+   * When false, loopback connections are allowed without auth.
+   * Default: true (always require auth for security).
+   */
+  requireAuthForLoopback?: boolean;
 }): Promise<GatewayAuthResult> {
   const { auth, connectAuth, req, trustedProxies } = params;
   const tailscaleWhois = params.tailscaleWhois ?? readTailscaleWhoisIdentity;
   const localDirect = isLocalDirectRequest(req, trustedProxies);
+  const requireAuthForLoopback = params.requireAuthForLoopback ?? true;
+
+  // If loopback auth is not required and this is a local direct connection,
+  // allow without authentication. This provides convenience for local development
+  // but should NOT be used in production (hardened/paranoid presets enforce auth).
+  if (!requireAuthForLoopback && localDirect) {
+    return { ok: true, method: "token", user: "local" };
+  }
 
   if (auth.allowTailscale && !localDirect) {
     const tailscaleCheck = await resolveVerifiedTailscaleUser({
