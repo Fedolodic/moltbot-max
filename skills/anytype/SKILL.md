@@ -2,7 +2,7 @@
 name: anytype
 description: Connect to Anytype as a local "second brain" - search, create, and surface insights from your encrypted knowledge base. Syncs objects to local memory for semantic vector search.
 homepage: https://developers.anytype.io
-metadata: {"moltbot":{"emoji":"🧠","requires":{"bins":["mcporter"]},"primaryEnv":"ANYTYPE_API_KEY","install":[{"id":"node","kind":"node","package":"mcporter","bins":["mcporter"],"label":"Install mcporter (node)"}]}}
+metadata: {"openclaw":{"emoji":"🧠","requires":{"bins":["mcporter"]},"primaryEnv":"ANYTYPE_API_KEY","install":[{"id":"node","kind":"node","package":"mcporter","bins":["mcporter"],"label":"Install mcporter (node)"}]}}
 ---
 
 # anytype
@@ -112,7 +112,7 @@ Sync Anytype objects to local markdown for semantic vector search:
 python skills/anytype/scripts/sync.py
 ```
 
-This creates `memory/anytype/*.md` files that Moltbot's memory system indexes automatically.
+This creates `memory/anytype/*.md` files that OpenClaw's memory system indexes automatically.
 
 ### Sync options
 
@@ -129,9 +129,9 @@ python skills/anytype/scripts/sync.py --dry-run
 
 ### Search synced content
 
-After sync, use Moltbot's memory search:
+After sync, use OpenClaw's memory search:
 ```bash
-moltbot memory search "machine learning notes"
+openclaw memory search "machine learning notes"
 ```
 
 ## Insight Patterns
@@ -182,5 +182,5 @@ See `references/insight-patterns.md` for detailed patterns.
 - Anytype Desktop must be running (API on `localhost:31009`)
 - API key grants read/write access to your vault
 - Synced markdown files are stored locally in `memory/anytype/`
-- Vector search uses Moltbot's hybrid BM25 + embedding approach
+- Vector search uses OpenClaw's hybrid BM25 + embedding approach
 - Relations between objects are preserved in markdown frontmatter

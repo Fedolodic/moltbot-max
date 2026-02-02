@@ -2,19 +2,19 @@
 
 | Field | Value |
 |-------|-------|
-| **Author(s)** | Moltbot Team |
+| **Author(s)** | OpenClaw Team |
 | **Status** | Implementation In Progress |
 | **Created** | 2026-01-29 |
 | **Last Updated** | 2026-02-02 |
 | **Reviewers** | TBD |
 | **Approvers** | TBD |
-| **Related Docs** | [Current Working Design](1-moltbot-current-working-design.md), [Security Audit Docs](https://docs.molt.bot/cli/security), [Anytype Security Analysis](anytype://Moltbot-Security-Analysis), [Second Mind Design](/Users/dmarpro/Documents/Projects/second-mind/design-docs/1-second-mind-current-working-design.md) |
+| **Related Docs** | [Current Working Design](1-openclaw-current-working-design.md), [Security Audit Docs](https://docs.openclaw.ai/cli/security), [Anytype Security Analysis](anytype://OpenClaw-Security-Analysis), [Second Mind Design](/Users/dmarpro/Documents/Projects/second-mind/design-docs/1-second-mind-current-working-design.md) |
 
 ---
 
 ## TL;DR
 
-This document proposes changes to make Moltbot secure by default across all platforms (macOS, iOS, Android, CLI, Docker). The goal is to shift from "security requires configuration" to "secure out of the box" while maintaining usability. Key changes include: mandatory gateway authentication, sandboxed tool execution by default, stricter DM policies, encrypted credential storage, and platform-specific hardening for native apps.
+This document proposes changes to make OpenClaw secure by default across all platforms (macOS, iOS, Android, CLI, Docker). The goal is to shift from "security requires configuration" to "secure out of the box" while maintaining usability. Key changes include: mandatory gateway authentication, sandboxed tool execution by default, stricter DM policies, encrypted credential storage, and platform-specific hardening for native apps.
 
 **Part 2** extends this with **workflow-specific security profiles** for advanced use cases:
 - **Second Brain** (Anytype MCP + shared GitHub third-brain repo with collaborator)
@@ -59,7 +59,7 @@ Each workflow has a dedicated security zone, trust boundary, and approval requir
 
 ### Problem Statement
 
-Recent security research (Cisco, Bitdefender, Noma Security, Snyk) has identified significant vulnerabilities in default Moltbot configurations:
+Recent security research (Cisco, Bitdefender, Noma Security, Snyk) has identified significant vulnerabilities in default OpenClaw configurations:
 
 1. **900+ exposed gateways** discovered on the internet with weak or no authentication
 2. **Plaintext credential storage** vulnerable to memory poisoning and exfiltration
@@ -88,7 +88,7 @@ The current security model requires users to manually configure hardening option
 
 | ID | Goal | Success Metric |
 |----|------|----------------|
-| G1 | Zero-config secure defaults | Fresh install passes `moltbot security audit --deep` with no critical findings |
+| G1 | Zero-config secure defaults | Fresh install passes `openclaw security audit --deep` with no critical findings |
 | G2 | Defense in depth | At least 3 security layers between untrusted input and host system |
 | G3 | Platform-appropriate hardening | Native apps use platform security features (Keychain, Secure Enclave, App Sandbox) |
 | G4 | Credential protection | No plaintext secrets on disk; encrypted at rest with user-controlled keys |
@@ -185,7 +185,7 @@ export const SECURE_GATEWAY_DEFAULTS = {
 ```
 
 **Key Behaviors:**
-- Auto-generate cryptographically secure 32-byte token on first `moltbot onboard`
+- Auto-generate cryptographically secure 32-byte token on first `openclaw onboard`
 - Store token in OS keychain (macOS/iOS) or Android Keystore
 - Require token auth even for localhost connections (defense against localhost proxy bypass)
 - Block startup if gateway would bind to non-loopback without explicit `--i-know-what-im-doing` flag
@@ -225,7 +225,7 @@ export const SECURE_DM_DEFAULTS = {
 **Migration Path:**
 1. Existing users keep current `dmPolicy` settings
 2. New installs get `allowlist` default
-3. `moltbot security audit` warns on `pairing` or `open` policies
+3. `openclaw security audit` warns on `pairing` or `open` policies
 4. Onboarding flow prompts user to approve their own identifier
 
 #### Component 3: Sandboxed Execution by Default
@@ -319,7 +319,7 @@ export interface SecureCredentialStore {
 **Migration Path:**
 1. On upgrade, detect plaintext credentials in `~/.clawdbot/credentials/`
 2. Prompt user to migrate to secure storage
-3. `moltbot security audit --fix` performs migration automatically
+3. `openclaw security audit --fix` performs migration automatically
 4. After migration, securely delete plaintext files (overwrite + unlink)
 
 **Credential Categories:**
@@ -405,18 +405,18 @@ export const SECURE_SKILL_DEFAULTS = {
 
 ```bash
 # Show security posture summary
-moltbot security status
+openclaw security status
 
 # Interactive security configuration wizard
-moltbot security configure
+openclaw security configure
 
 # Export security report (for compliance)
-moltbot security report --format json|html|pdf
+openclaw security report --format json|html|pdf
 
 # Simulate attack scenarios
-moltbot security test --scenario prompt-injection
-moltbot security test --scenario credential-exfil
-moltbot security test --scenario skill-malware
+openclaw security test --scenario prompt-injection
+openclaw security test --scenario credential-exfil
+openclaw security test --scenario skill-malware
 ```
 
 ---
@@ -470,13 +470,13 @@ flowchart TB
 
 ### Workflow 1: Second Brain Integration (Anytype + GitHub)
 
-**Use Case:** Local second-brain project synced with Anytype MCP, with a shared "third-brain" GitHub repo collaborated on by another user's Moltbot.
+**Use Case:** Local second-brain project synced with Anytype MCP, with a shared "third-brain" GitHub repo collaborated on by another user's OpenClaw.
 
 **Trust Model:**
 - **Local Anytype:** Fully trusted (runs on localhost:31009)
 - **Local second-brain folder:** Fully trusted
 - **third-brain GitHub repo:** Partially trusted (shared with known collaborator)
-- **Collaborator's Moltbot:** Untrusted (treat as external input)
+- **Collaborator's OpenClaw:** Untrusted (treat as external input)
 
 **Security Configuration:**
 
@@ -543,8 +543,8 @@ export const SECOND_BRAIN_PROFILE = {
         },
         // Collaboration security
         collaboration: {
-          // Known collaborator's Moltbot identity
-          trustedCollaborators: ['collaborator-moltbot-id'],
+          // Known collaborator's OpenClaw identity
+          trustedCollaborators: ['collaborator-openclaw-id'],
           // Verify commit signatures from collaborators
           verifyCollaboratorSignatures: true,
           // Auto-reject commits with suspicious patterns
@@ -581,9 +581,9 @@ export const SECOND_BRAIN_PROFILE = {
 
 ```mermaid
 sequenceDiagram
-    participant Local as Local Moltbot
+    participant Local as Local OpenClaw
     participant GH as GitHub (third-brain)
-    participant Remote as Collaborator's Moltbot
+    participant Remote as Collaborator's OpenClaw
 
     Note over Local,Remote: Secure Collaboration Flow
 
@@ -853,7 +853,7 @@ export const EMAIL_ASSISTANT_PROFILE = {
     // Template for responses
     requireApprovalBefore: 'send', // user must manually send
     // Include disclaimer
-    disclaimer: '--- Draft generated by Moltbot. Please review before sending. ---',
+    disclaimer: '--- Draft generated by OpenClaw. Please review before sending. ---',
     // Tone guidelines
     toneGuidelines: 'professional, concise, helpful',
   },
@@ -1106,7 +1106,7 @@ export const VOICE_TTS_PROFILE = {
     // Local execution only
     execution: 'local',
     // Model path
-    modelPath: '~/.moltbot/models/qwen3-tts-1.7b',
+    modelPath: '~/.openclaw/models/qwen3-tts-1.7b',
     // No network access needed
     networkAccess: false,
   },
@@ -1120,7 +1120,7 @@ export const VOICE_TTS_PROFILE = {
     // Output format
     format: 'wav',
     // Temporary file location
-    tempDir: '/tmp/moltbot-tts',
+    tempDir: '/tmp/openclaw-tts',
     // Auto-cleanup
     cleanupAfter: 300_000, // 5 minutes
   },
@@ -1332,7 +1332,7 @@ export const TRADING_AGENT_PROFILE = {
     // Log all trading activity
     logAllActivity: true,
     // Store in secure location
-    logPath: '~/.moltbot/trading-audit.jsonl',
+    logPath: '~/.openclaw/trading-audit.jsonl',
     // Include
     logFields: [
       'timestamp',
@@ -1794,7 +1794,7 @@ export const SECURITY_PRESETS = {
 #### macOS App
 
 ```swift
-// Entitlements (Moltbot.entitlements)
+// Entitlements (OpenClaw.entitlements)
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "...">
 <plist version="1.0">
@@ -1814,7 +1814,7 @@ export const SECURITY_PRESETS = {
     <!-- Keychain access for credentials -->
     <key>com.apple.security.keychain-access-groups</key>
     <array>
-        <string>$(AppIdentifierPrefix)bot.molt.Moltbot</string>
+        <string>$(AppIdentifierPrefix)ai.openclaw.OpenClaw</string>
     </array>
 
     <!-- NO file access outside container by default -->
@@ -1823,7 +1823,7 @@ export const SECURITY_PRESETS = {
     <!-- XPC service for sandboxed tool execution -->
     <key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
     <array>
-        <string>bot.molt.Moltbot.Sandbox</string>
+        <string>ai.openclaw.OpenClaw.Sandbox</string>
     </array>
 </dict>
 </plist>
@@ -1832,7 +1832,7 @@ export const SECURITY_PRESETS = {
 **XPC Sandbox Service:**
 
 ```swift
-// NEW: MoltbotSandbox XPC service
+// NEW: OpenClawSandbox XPC service
 // Runs in separate process with even tighter sandbox
 // Handles all tool execution, file operations outside container
 // Communicates with main app via XPC protocol
@@ -1919,7 +1919,7 @@ val masterKey = MasterKey.Builder(context)
 
 val encryptedPrefs = EncryptedSharedPreferences.create(
     context,
-    "moltbot_credentials",
+    "openclaw_credentials",
     masterKey,
     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -1933,18 +1933,18 @@ val encryptedPrefs = EncryptedSharedPreferences.create(
 FROM node:22-alpine AS base
 
 # Create non-root user
-RUN addgroup -g 1001 moltbot && \
-    adduser -u 1001 -G moltbot -s /bin/sh -D moltbot
+RUN addgroup -g 1001 openclaw && \
+    adduser -u 1001 -G openclaw -s /bin/sh -D openclaw
 
 # Install with minimal footprint
 WORKDIR /app
-COPY --chown=moltbot:moltbot package*.json ./
+COPY --chown=openclaw:openclaw package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --chown=moltbot:moltbot dist/ ./dist/
+COPY --chown=openclaw:openclaw dist/ ./dist/
 
 # Switch to non-root
-USER moltbot
+USER openclaw
 
 # Security hardening
 FROM base AS hardened
@@ -1963,7 +1963,7 @@ CMD ["gateway", "run"]
 #   --security-opt=no-new-privileges:true \
 #   --memory=2g --cpus=1 \
 #   -u 1001:1001 \
-#   moltbot/moltbot:latest
+#   openclaw/openclaw:latest
 ```
 
 ---
@@ -2061,7 +2061,7 @@ New security-specific logging:
 | Sandbox escapes | Low | High | Regular security audits, bug bounty program |
 | Keychain unavailable (headless) | Medium | Medium | Fallback to encrypted file with env passphrase |
 | Performance regression | Medium | Low | Benchmark CI gate, opt-out for power users |
-| User confusion from stricter defaults | Medium | Low | Clear error messages, `moltbot security configure` wizard |
+| User confusion from stricter defaults | Medium | Low | Clear error messages, `openclaw security configure` wizard |
 
 ---
 
@@ -2084,12 +2084,12 @@ New security-specific logging:
 - **Scope:**
   - Implement `SecureCredentialStore` interface and platform backends
   - Add `security.level` config with presets
-  - Update `moltbot security audit` with new checks
+  - Update `openclaw security audit` with new checks
   - Add migration tooling for plaintext credentials
 
 - **Success Criteria:**
   - All platforms have working keychain integration
-  - `moltbot security audit` reports credential storage type
+  - `openclaw security audit` reports credential storage type
   - Migration works without data loss
 
 ### Phase 2: Gateway Hardening (2 weeks)
@@ -2103,7 +2103,7 @@ New security-specific logging:
 - **Success Criteria:**
   - Fresh install requires no security configuration
   - Native apps authenticate automatically
-  - `moltbot security audit --deep` passes on fresh install
+  - `openclaw security audit --deep` passes on fresh install
 
 ### Phase 3: Sandbox by Default (3 weeks)
 
@@ -2137,7 +2137,7 @@ New security-specific logging:
 - **Scope:**
   - Update all security documentation
   - Create migration guide for existing users
-  - Add `moltbot security configure` wizard
+  - Add `openclaw security configure` wizard
   - Publish security whitepaper
 
 - **Success Criteria:**
@@ -2148,7 +2148,7 @@ New security-specific logging:
 ### Phase 6: Workflow Security Profiles (3 weeks)
 
 - **Scope:**
-  - Implement workflow profile system (`moltbot workflow create <profile>`)
+  - Implement workflow profile system (`openclaw workflow create <profile>`)
   - Second Brain profile: Anytype MCP integration, GitHub collaboration security
   - Twitter Intelligence profile: OAuth, content quarantine, rate limiting
   - Email Assistant profile: PII redaction, phishing detection, draft-only mode
@@ -2183,7 +2183,7 @@ New security-specific logging:
 - **Scope:**
   - Signed commit verification for shared repos
   - Collaborator identity management
-  - Cross-Moltbot trust establishment
+  - Cross-OpenClaw trust establishment
   - Malicious pattern detection in commits
   - ctx namespace isolation for shared knowledge
 
@@ -2201,7 +2201,7 @@ Each phase can be rolled back independently:
 3. **Sandbox:** Disable with `sandbox.mode: 'off'`
 4. **Skill vetting:** Disable with `skills.autoVet: false`
 
-Global rollback: `moltbot config set security.level standard` restores pre-hardening defaults.
+Global rollback: `openclaw config set security.level standard` restores pre-hardening defaults.
 
 ---
 
@@ -2254,7 +2254,7 @@ Global rollback: `moltbot config set security.level standard` restores pre-harde
 - [ ] Should we integrate with enterprise secrets managers (Vault, AWS Secrets)?
 
 ### Workflow-Specific
-- [ ] How to handle third-brain collaboration when collaborator's Moltbot has different security settings?
+- [ ] How to handle third-brain collaboration when collaborator's OpenClaw has different security settings?
 - [ ] Should Twitter content quarantine be configurable per-list?
 - [ ] What's the right balance between email draft auto-generation and privacy?
 - [ ] Should autonomous dev have a "dry run" mode that shows proposed changes without applying?
@@ -2269,10 +2269,10 @@ Global rollback: `moltbot config set security.level standard` restores pre-harde
 
 | Date | Author | Changes |
 |------|--------|---------|
-| 2026-01-29 | Moltbot Team | Initial draft based on Anytype Security Analysis |
-| 2026-01-29 | Moltbot Team | Added Part 2: Workflow-Specific Security Profiles (Second Brain, Twitter, Email, Autonomous Dev, Voice TTS, Trading, Idea Pipeline) |
-| 2026-01-29 | Moltbot Team | Added multi-model routing configuration |
-| 2026-01-29 | Moltbot Team | Added Appendices D-I: Workflow security summaries, threat models, credential matrix, HEARTBEAT integration, emergency procedures, onboarding checklist |
+| 2026-01-29 | OpenClaw Team | Initial draft based on Anytype Security Analysis |
+| 2026-01-29 | OpenClaw Team | Added Part 2: Workflow-Specific Security Profiles (Second Brain, Twitter, Email, Autonomous Dev, Voice TTS, Trading, Idea Pipeline) |
+| 2026-01-29 | OpenClaw Team | Added multi-model routing configuration |
+| 2026-01-29 | OpenClaw Team | Added Appendices D-I: Workflow security summaries, threat models, credential matrix, HEARTBEAT integration, emergency procedures, onboarding checklist |
 
 ---
 
@@ -2367,13 +2367,13 @@ See `src/security/audit.ts` for full implementation. Key check categories:
 
 ```bash
 # Immediate halt of all trading activity
-moltbot workflow stop trading-agent --emergency
+openclaw workflow stop trading-agent --emergency
 
 # Revoke all trading API keys
-moltbot credentials revoke --namespace trading --all
+openclaw credentials revoke --namespace trading --all
 
 # Export audit log for review
-moltbot trading audit-export --output ~/trading-emergency-$(date +%s).json
+openclaw trading audit-export --output ~/trading-emergency-$(date +%s).json
 
 # Review open positions (manual broker action required)
 echo "MANUAL ACTION: Log into broker and review/close positions"
@@ -2383,7 +2383,7 @@ echo "MANUAL ACTION: Log into broker and review/close positions"
 
 ```bash
 # Stop autonomous development loop
-moltbot workflow stop autonomous-dev
+openclaw workflow stop autonomous-dev
 
 # Review recent changes
 git log --oneline -20
@@ -2393,14 +2393,14 @@ git diff HEAD~10
 git reset --hard HEAD~N  # where N = number of bad commits
 
 # Restart with stricter limits
-moltbot workflow start autonomous-dev --max-iterations 10 --require-approval all
+openclaw workflow start autonomous-dev --max-iterations 10 --require-approval all
 ```
 
 #### Idea Pipeline Reset
 
 ```bash
 # Pause idea pipeline
-moltbot workflow pause idea-pipeline
+openclaw workflow pause idea-pipeline
 
 # Review recent seeds and insights
 ls -la ~/Documents/Projects/second-mind/seeds/
@@ -2413,14 +2413,14 @@ mv ~/Documents/Projects/second-mind/seeds/suspicious-* ~/quarantine/
 ctx clean --keyword "contaminated-source"
 
 # Restart with fresh observation
-moltbot workflow start idea-pipeline --reset-observations
+openclaw workflow start idea-pipeline --reset-observations
 ```
 
 ### Appendix I: Secure Workflow Onboarding Checklist
 
 #### Before Enabling Any Workflow
 
-- [ ] `moltbot security audit --deep` passes with no critical findings
+- [ ] `openclaw security audit --deep` passes with no critical findings
 - [ ] All credentials stored in keychain (not plaintext)
 - [ ] Gateway auth enabled with 32+ char token
 - [ ] Sandbox mode set to `all`
@@ -2431,7 +2431,7 @@ moltbot workflow start idea-pipeline --reset-observations
 - [ ] Anytype API key generated and stored in keychain
 - [ ] GitHub PAT created with minimal scopes (repo access only)
 - [ ] Signed commits enabled for third-brain repo
-- [ ] Collaborator's Moltbot identity added to trusted list
+- [ ] Collaborator's OpenClaw identity added to trusted list
 
 #### Twitter Intelligence Workflow
 

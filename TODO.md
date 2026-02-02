@@ -1,4 +1,4 @@
-# Moltbot Security Hardening - Work Breakdown Structure
+# OpenClaw Security Hardening - Work Breakdown Structure
 
 **Generated**: 2026-01-29
 **Last Updated**: 2026-02-02 (Gap Analysis v3 - CLI Complete)
@@ -7,11 +7,11 @@
 
 ## Overview
 
-Implementation plan for making Moltbot secure by default across all platforms, plus workflow-specific security profiles for Second Brain, Twitter Intelligence, Email Assistant, Autonomous Dev, Voice TTS, Trading Agent, and Idea Pipeline.
+Implementation plan for making OpenClaw secure by default across all platforms, plus workflow-specific security profiles for Second Brain, Twitter Intelligence, Email Assistant, Autonomous Dev, Voice TTS, Trading Agent, and Idea Pipeline.
 
 ## Project Goals
 
-- G1: Zero-config secure defaults (fresh install passes `moltbot security audit --deep`)
+- G1: Zero-config secure defaults (fresh install passes `openclaw security audit --deep`)
 - G2: Defense in depth (3+ security layers between untrusted input and host)
 - G3: Platform-appropriate hardening (Keychain, Secure Enclave, App Sandbox)
 - G4: Credential protection (no plaintext secrets on disk)
@@ -99,18 +99,18 @@ These items were identified as gaps between the design doc and current implement
   - **Completed**: 2026-01-30
   - Implementation: `src/security/audit-credentials.ts` - `scanForPlaintextCredentials()`
 
-- [x] **GAP-4** Migration wizard CLI (`moltbot credentials migrate`) ✅
+- [x] **GAP-4** Migration wizard CLI (`openclaw credentials migrate`) ✅
   - Design doc: 1.3.2
   - Depends on: GAP-3
   - **Completed**: 2026-01-30
   - Implementation: `src/cli/credentials-cli.ts`
-  - Commands: `moltbot credentials status`, `migrate`, `list`, `backends`
+  - Commands: `openclaw credentials status`, `migrate`, `list`, `backends`
 
-- [x] **GAP-5** `moltbot security status` command - Show security posture summary ✅
+- [x] **GAP-5** `openclaw security status` command - Show security posture summary ✅
   - Design doc: 1.4.3
   - Should show: security level, credential storage, sandbox mode, audit findings
   - **Completed**: 2026-01-30
-  - Implementation: `src/cli/security-cli.ts` - `moltbot security status`
+  - Implementation: `src/cli/security-cli.ts` - `openclaw security status`
 
 - [x] **GAP-6** Credential storage audit checks integration ✅
   - Design doc: 1.4.1
@@ -133,7 +133,7 @@ These items were identified as gaps between the design doc and current implement
   - Needed for: Securely removing migrated plaintext credentials
   - **Completed**: 2026-01-30
   - Implementation: `src/cli/credentials-cli.ts` - `secureDeleteFile()` function
-  - Usage: `moltbot credentials migrate --secure-delete`
+  - Usage: `openclaw credentials migrate --secure-delete`
 
 - [x] **GAP-10** Security level audit checks ✅
   - Design doc: 1.4.2
@@ -241,22 +241,22 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 #### Missing CLI Commands (Design Doc lines 378-394)
 
-- [x] **GAP-28** `moltbot security configure` command ✅
+- [x] **GAP-28** `openclaw security configure` command ✅
   - Description: Interactive security configuration wizard
   - **Completed**: 2026-02-02
-  - Implementation: `src/cli/security-cli.ts` - `moltbot security configure`
+  - Implementation: `src/cli/security-cli.ts` - `openclaw security configure`
   - Features: Use case recommendation, security level selection, customizable settings, non-interactive mode
 
-- [x] **GAP-29** `moltbot security report` command ✅
+- [x] **GAP-29** `openclaw security report` command ✅
   - Description: Export security report in json/html format
   - **Completed**: 2026-02-02
-  - Implementation: `src/cli/security-cli.ts` - `moltbot security report --format json|html -o <file>`
+  - Implementation: `src/cli/security-cli.ts` - `openclaw security report --format json|html -o <file>`
   - Features: Full audit with credentials, configuration, findings; HTML report with styling
 
-- [x] **GAP-30** `moltbot security test` command ✅
+- [x] **GAP-30** `openclaw security test` command ✅
   - Description: Simulate attack scenarios (prompt-injection, credential-exfil, skill-malware)
   - **Completed**: 2026-02-02
-  - Implementation: `src/cli/security-cli.ts` - `moltbot security test --scenario <name>`
+  - Implementation: `src/cli/security-cli.ts` - `openclaw security test --scenario <name>`
   - Scenarios: prompt-injection, credential-exfil, skill-malware, all
 
 #### DM Policy & Channel Security Gaps (Design Doc lines 167-204)
@@ -324,7 +324,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 - [x] **GAP-39** Token recovery mechanism ✅
   - Design doc: Implies token can be retrieved from keychain
   - **Completed**: 2026-01-30
-  - Implementation: Added `moltbot gateway token show` command in `src/cli/gateway-cli/register.ts`
+  - Implementation: Added `openclaw gateway token show` command in `src/cli/gateway-cli/register.ts`
   - Retrieves token from keychain (preferred) or config file (fallback)
   - Supports `--json` output
 
@@ -484,7 +484,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - **Completed**: 2026-01-30
   - Implementation: `src/security/audit-credentials.ts` - `scanForPlaintextCredentials()`, `PLAINTEXT_CREDENTIAL_PATTERNS`
 
-- [x] **1.3.2** Implement migration wizard CLI (`moltbot credentials migrate`) ✅
+- [x] **1.3.2** Implement migration wizard CLI (`openclaw credentials migrate`) ✅
   - Dependencies: 1.3.1
   - Show: found credentials, target store
   - Confirm before migration
@@ -498,7 +498,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - **Completed**: 2026-01-30
   - Implementation: `src/cli/credentials-cli.ts` - `secureDeleteFile()`
 
-- [x] **1.3.4** Add migration to `moltbot security audit --fix` ✅
+- [x] **1.3.4** Add migration to `openclaw security audit --fix` ✅
   - Dependencies: 1.3.2, 1.3.3
   - Auto-migrate if user confirms
   - Report success/failure
@@ -525,12 +525,12 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - **Completed**: 2026-01-30
   - Implementation: `src/security/audit.ts` - `collectSecurityLevelFindings()`
 
-- [x] **1.4.3** Implement `moltbot security status` command ✅
+- [x] **1.4.3** Implement `openclaw security status` command ✅
   - Dependencies: 1.4.1, 1.4.2
   - Summary: security level, credential storage, sandbox mode, etc.
   - Color-coded output (green/yellow/red)
   - **Completed**: 2026-01-30
-  - Implementation: `src/cli/security-cli.ts` - `moltbot security status [--json]`
+  - Implementation: `src/cli/security-cli.ts` - `openclaw security status [--json]`
 
 ---
 
@@ -549,7 +549,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Implementation: `src/gateway/token.ts` - `generateSecureToken()`, `generateAndValidateToken()`
   - Tests: 29 tests in `src/gateway/token.test.ts`
 
-- [x] **2.1.2** Auto-generate token on first `moltbot onboard` ✅
+- [x] **2.1.2** Auto-generate token on first `openclaw onboard` ✅
   - Dependencies: 2.1.1, 1.1.8
   - Store in keychain
   - Display token once for user to save
@@ -825,7 +825,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 - [ ] **4.2.4** Implement signature verification for official skills
   - Dependencies: None
   - Config: requireSignature ('official', 'any', 'none')
-  - Verify GPG signature against Moltbot public key
+  - Verify GPG signature against OpenClaw public key
 
 ### 4.3 Skill Audit
 
@@ -842,7 +842,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - List skills in quarantine
   - Show time remaining
 
-- [ ] **4.3.3** Implement `moltbot skills audit` command
+- [ ] **4.3.3** Implement `openclaw skills audit` command
   - Dependencies: 4.3.1, 4.3.2
   - Vet all installed skills
   - Report risks and recommendations
@@ -860,17 +860,17 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Dependencies: None
   - Fields: id, filesystem, oauth, api, contentSecurity, schedule, etc.
 
-- [ ] **5.1.2** Implement `moltbot workflow create <profile>` command
+- [ ] **5.1.2** Implement `openclaw workflow create <profile>` command
   - Dependencies: 5.1.1
   - Load profile definition
   - Configure workflow with security settings
 
-- [ ] **5.1.3** Implement `moltbot workflow list` command
+- [ ] **5.1.3** Implement `openclaw workflow list` command
   - Dependencies: 5.1.2
   - Show active workflows
   - Display security zone, status
 
-- [ ] **5.1.4** Implement `moltbot workflow stop <id>` command
+- [ ] **5.1.4** Implement `openclaw workflow stop <id>` command
   - Dependencies: 5.1.2
   - Graceful shutdown
   - `--emergency` flag for immediate halt
@@ -1003,7 +1003,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 - [ ] **5.6.2** Implement Qwen3-TTS model loader
   - Dependencies: 5.6.1
-  - Model path: ~/.moltbot/models/qwen3-tts-1.7b
+  - Model path: ~/.openclaw/models/qwen3-tts-1.7b
   - Checksum verification
 
 - [ ] **5.6.3** Implement content redaction before TTS
@@ -1013,7 +1013,7 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 - [ ] **5.6.4** Implement audio cleanup
   - Dependencies: 5.6.1
-  - Temp dir: /tmp/moltbot-tts
+  - Temp dir: /tmp/openclaw-tts
   - Auto-cleanup after 5 minutes
 
 ### 5.7 Trading Agent Workflow
@@ -1177,9 +1177,9 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
   - Store trusted keys
   - Add/remove collaborator keys
 
-- [ ] **7.1.3** Implement commit signing for Moltbot-generated commits
+- [ ] **7.1.3** Implement commit signing for OpenClaw-generated commits
   - Dependencies: 7.1.1
-  - Sign all commits from local Moltbot
+  - Sign all commits from local OpenClaw
   - Use dedicated GPG key
 
 ### 7.2 Malicious Pattern Detection
@@ -1257,21 +1257,21 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 **Priority**: Medium
 **Status**: 100% Complete ✅
 
-- [x] **8.2.1** Implement `moltbot security configure` wizard ✅
+- [x] **8.2.1** Implement `openclaw security configure` wizard ✅
   - Dependencies: 1.2.2, 2.2.1, 3.1.1
   - **Completed**: 2026-02-02
   - Interactive security setup with use case recommendations
   - Supports --non-interactive for automated setup
   - Customizable gateway, sandbox, and audit settings
 
-- [x] **8.2.2** Implement `moltbot security report` command ✅
+- [x] **8.2.2** Implement `openclaw security report` command ✅
   - Dependencies: 1.4.3
   - **Completed**: 2026-02-02
   - Export security report in JSON or HTML format
   - Includes full audit, credential status, configuration, findings
   - Output to file or stdout
 
-- [x] **8.2.3** Implement `moltbot security test` command ✅
+- [x] **8.2.3** Implement `openclaw security test` command ✅
   - Dependencies: Phase 3, 4
   - **Completed**: 2026-02-02
   - Scenarios: prompt-injection, credential-exfil, skill-malware

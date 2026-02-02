@@ -3,7 +3,7 @@ import type {
   AgentToolResult,
   AgentToolUpdateCallback,
 } from "@mariozechner/pi-agent-core";
-import type { ToolDefinition } from "@mariozechner/pi-coding-agent";
+import type { ExtensionContext, ToolDefinition } from "@mariozechner/pi-coding-agent";
 import type { ClientToolDefinition } from "./pi-embedded-runner/run/params.js";
 import { logDebug, logError } from "../logger.js";
 import { runBeforeToolCallHook } from "./pi-tools.before-tool-call.js";
@@ -40,9 +40,9 @@ export function toToolDefinitions(tools: AnyAgentTool[]): ToolDefinition[] {
       execute: async (
         toolCallId,
         params,
-        signal,
         onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-        _ctx,
+        _ctx: ExtensionContext,
+        signal?: AbortSignal,
       ): Promise<AgentToolResult<unknown>> => {
         try {
           return await tool.execute(toolCallId, params, signal, onUpdate);
@@ -91,9 +91,9 @@ export function toClientToolDefinitions(
       execute: async (
         toolCallId,
         params,
-        _signal,
         _onUpdate: AgentToolUpdateCallback<unknown> | undefined,
-        _ctx,
+        _ctx: ExtensionContext,
+        _signal?: AbortSignal,
       ): Promise<AgentToolResult<unknown>> => {
         const outcome = await runBeforeToolCallHook({
           toolName: func.name,

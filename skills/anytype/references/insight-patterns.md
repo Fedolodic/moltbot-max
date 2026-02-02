@@ -23,7 +23,7 @@ mcporter call anytype.get_object object_id="..." --output json
 
 ```bash
 # 1. Search synced memory for semantic matches
-moltbot memory search "machine learning concepts"
+openclaw memory search "machine learning concepts"
 
 # 2. Extract anytype_id from results' frontmatter
 # 3. Fetch live relations from Anytype
@@ -161,13 +161,13 @@ Analyze:
 ```bash
 # Combine live search + memory search
 mcporter call anytype.search_objects query="$TOPIC" --output json
-moltbot memory search "$TOPIC"
+openclaw memory search "$TOPIC"
 ```
 
 ### Find related notes to current context
 ```bash
 # Based on current conversation/task, search memory
-moltbot memory search "$CURRENT_CONTEXT"
+openclaw memory search "$CURRENT_CONTEXT"
 # Then expand via Anytype relations
 ```
 

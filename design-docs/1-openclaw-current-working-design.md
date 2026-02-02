@@ -1,18 +1,18 @@
-# Moltbot Current Working Design
+# OpenClaw Current Working Design
 
 | Field | Value |
 |-------|-------|
-| **Author(s)** | Moltbot Team |
+| **Author(s)** | OpenClaw Team |
 | **Status** | Living Document |
 | **Created** | 2026-01-29 |
 | **Last Updated** | 2026-02-02 |
-| **Related Docs** | [README](../README.md), [Docs](https://docs.molt.bot) |
+| **Related Docs** | [README](../README.md), [Docs](https://docs.openclaw.ai) |
 
 ---
 
 ## TL;DR
 
-Moltbot is a unified messaging gateway with AI agent capabilities. It provides a single CLI and native apps (macOS, iOS, Android) to manage multiple messaging platforms (WhatsApp, Telegram, Discord, Slack, Signal, iMessage, and more) while enabling AI-powered automation through the Pi agent system. The system serves both technical users (CLI) and non-technical users (native apps).
+OpenClaw is a unified messaging gateway with AI agent capabilities. It provides a single CLI and native apps (macOS, iOS, Android) to manage multiple messaging platforms (WhatsApp, Telegram, Discord, Slack, Signal, iMessage, and more) while enabling AI-powered automation through the Pi agent system. The system serves both technical users (CLI) and non-technical users (native apps).
 
 ---
 
@@ -23,7 +23,7 @@ Moltbot is a unified messaging gateway with AI agent capabilities. It provides a
 | G1 | Unified multi-channel messaging | Support 6+ messaging platforms through single interface |
 | G2 | AI-powered message handling | Pi agent responds intelligently to messages with tool use |
 | G3 | Cross-platform native experience | Native apps for macOS, iOS, Android with shared core |
-| G4 | Developer-friendly CLI | Full functionality accessible via `moltbot` CLI commands |
+| G4 | Developer-friendly CLI | Full functionality accessible via `openclaw` CLI commands |
 | G5 | Extensible architecture | Plugin system for custom channels and integrations |
 | G6 | Privacy-first design | Local-first processing, user controls data |
 
@@ -62,7 +62,7 @@ flowchart TB
         WebUI[Web UI]
     end
 
-    subgraph Gateway["Moltbot Gateway"]
+    subgraph Gateway["OpenClaw Gateway"]
         Router[Message Router]
         Agent[Pi Agent]
         Plugins[Plugin System]
@@ -164,7 +164,7 @@ interface ChannelAdapter {
 **Key Behaviors:**
 - Discovers plugins in `extensions/` directory
 - Loads via jiti for TypeScript support
-- Provides SDK for plugin development (`moltbot/plugin-sdk`)
+- Provides SDK for plugin development (`openclaw/plugin-sdk`)
 - Manages plugin lifecycle
 
 ### Native App Protocol (`apps/macos/`, `apps/ios/`, `apps/android/`)
@@ -223,14 +223,14 @@ interface Config {
 
 | Command | Description |
 |---------|-------------|
-| `moltbot gateway run` | Start the gateway server |
-| `moltbot channels status` | Show channel connection status |
-| `moltbot config set <key> <value>` | Update configuration |
-| `moltbot message send <channel> <to> <msg>` | Send a message |
-| `moltbot agent --message "<msg>"` | Invoke agent directly |
-| `moltbot tui` | Launch terminal UI |
-| `moltbot login` | Authenticate with web provider |
-| `moltbot doctor` | Diagnose configuration issues |
+| `openclaw gateway run` | Start the gateway server |
+| `openclaw channels status` | Show channel connection status |
+| `openclaw config set <key> <value>` | Update configuration |
+| `openclaw message send <channel> <to> <msg>` | Send a message |
+| `openclaw agent --message "<msg>"` | Invoke agent directly |
+| `openclaw tui` | Launch terminal UI |
+| `openclaw login` | Authenticate with web provider |
+| `openclaw doctor` | Diagnose configuration issues |
 
 ### Gateway WebSocket Protocol
 
@@ -266,7 +266,7 @@ See [Security Hardening Design Doc](2-security-hardening-by-default.md) for full
 **Credential Storage (Phase 1 Complete):**
 - **macOS:** System Keychain via `security` CLI
 - **Fallback:** AES-256-GCM encrypted file with scrypt key derivation
-- **Migration:** `moltbot credentials migrate` to move plaintext to secure storage
+- **Migration:** `openclaw credentials migrate` to move plaintext to secure storage
 
 **Gateway Security (Phase 2 Complete):**
 - **Auto-token:** Secure 256-bit token generated on first onboard
@@ -280,18 +280,18 @@ See [Security Hardening Design Doc](2-security-hardening-by-default.md) for full
 
 **Security CLI Commands:**
 ```bash
-moltbot security status        # Show security posture summary
-moltbot security audit --deep  # Full security audit with gateway probe
-moltbot security audit --fix   # Auto-fix common security issues
-moltbot security configure     # Interactive security setup wizard
-moltbot security report        # Export security report (JSON/HTML)
-moltbot security test          # Verify security defenses
+openclaw security status        # Show security posture summary
+openclaw security audit --deep  # Full security audit with gateway probe
+openclaw security audit --fix   # Auto-fix common security issues
+openclaw security configure     # Interactive security setup wizard
+openclaw security report        # Export security report (JSON/HTML)
+openclaw security test          # Verify security defenses
 ```
 
 ### Privacy and Compliance
 
 - **Local-first:** All processing happens on user's machine
-- **No telemetry:** No usage data sent to Moltbot servers
+- **No telemetry:** No usage data sent to OpenClaw servers
 - **Platform ToS:** Users responsible for compliance with platform terms
 - **Data retention:** User controls all data, can delete at any time
 
@@ -299,7 +299,7 @@ moltbot security test          # Verify security defenses
 
 - **Logging:** tslog with configurable levels, file rotation
 - **macOS logs:** Unified logging via `os_log` subsystem
-- **CLI:** `moltbot channels status --probe` for health checks
+- **CLI:** `openclaw channels status --probe` for health checks
 - **Scripts:** `scripts/clawlog.sh` for log queries
 
 ### Performance
@@ -369,7 +369,7 @@ moltbot security test          # Verify security defenses
 ### Appendix A: Directory Structure
 
 ```
-moltbot/
+openclaw/
   src/
     cli/           # CLI command wiring
     commands/      # Command implementations
@@ -406,7 +406,7 @@ moltbot/
 
 ### Appendix C: Related Documentation
 
-- Installation: https://docs.molt.bot/install
-- Configuration: https://docs.molt.bot/configuration
-- Channels: https://docs.molt.bot/channels
-- Troubleshooting: https://docs.molt.bot/gateway/doctor
+- Installation: https://docs.openclaw.ai/install
+- Configuration: https://docs.openclaw.ai/configuration
+- Channels: https://docs.openclaw.ai/channels
+- Troubleshooting: https://docs.openclaw.ai/gateway/doctor
