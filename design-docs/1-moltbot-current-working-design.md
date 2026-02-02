@@ -5,7 +5,7 @@
 | **Author(s)** | Moltbot Team |
 | **Status** | Living Document |
 | **Created** | 2026-01-29 |
-| **Last Updated** | 2026-01-29 |
+| **Last Updated** | 2026-02-02 |
 | **Related Docs** | [README](../README.md), [Docs](https://docs.molt.bot) |
 
 ---
@@ -259,10 +259,34 @@ Native apps communicate via JSON-RPC over WebSocket:
 
 ### Security
 
-- **Credentials:** Stored in `~/.clawdbot/credentials/` with filesystem permissions
-- **Tokens:** Channel tokens stored locally, never transmitted
-- **Agent:** Sandboxed tool execution, configurable permissions
-- **Network:** Gateway binds to loopback by default
+See [Security Hardening Design Doc](2-security-hardening-by-default.md) for full security architecture.
+
+**Security Levels:** Three presets available - `standard`, `hardened` (default), `paranoid`
+
+**Credential Storage (Phase 1 Complete):**
+- **macOS:** System Keychain via `security` CLI
+- **Fallback:** AES-256-GCM encrypted file with scrypt key derivation
+- **Migration:** `moltbot credentials migrate` to move plaintext to secure storage
+
+**Gateway Security (Phase 2 Complete):**
+- **Auto-token:** Secure 256-bit token generated on first onboard
+- **Loopback auth:** Authentication required even for localhost (hardened/paranoid)
+- **Token validation:** Minimum 32 chars, weak pattern detection
+
+**Sandboxed Execution (Phase 3 In Progress):**
+- **Default mode:** `all` - sandbox all tool execution
+- **Dangerous tools:** Opt-in with mandatory approval (browser, exec, canvas, cron)
+- **Network policy:** Configurable allowlist (default: AI providers only)
+
+**Security CLI Commands:**
+```bash
+moltbot security status        # Show security posture summary
+moltbot security audit --deep  # Full security audit with gateway probe
+moltbot security audit --fix   # Auto-fix common security issues
+moltbot security configure     # Interactive security setup wizard
+moltbot security report        # Export security report (JSON/HTML)
+moltbot security test          # Verify security defenses
+```
 
 ### Privacy and Compliance
 

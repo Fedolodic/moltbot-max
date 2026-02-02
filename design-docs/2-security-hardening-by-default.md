@@ -3,9 +3,9 @@
 | Field | Value |
 |-------|-------|
 | **Author(s)** | Moltbot Team |
-| **Status** | Draft |
+| **Status** | Implementation In Progress |
 | **Created** | 2026-01-29 |
-| **Last Updated** | 2026-01-29 |
+| **Last Updated** | 2026-02-02 |
 | **Reviewers** | TBD |
 | **Approvers** | TBD |
 | **Related Docs** | [Current Working Design](1-moltbot-current-working-design.md), [Security Audit Docs](https://docs.molt.bot/cli/security), [Anytype Security Analysis](anytype://Moltbot-Security-Analysis), [Second Mind Design](/Users/dmarpro/Documents/Projects/second-mind/design-docs/1-second-mind-current-working-design.md) |
@@ -26,6 +26,32 @@ This document proposes changes to make Moltbot secure by default across all plat
 - **Idea Pipeline** (OBSERVE → CONNECT → DEVELOP loop for emergent ideas)
 
 Each workflow has a dedicated security zone, trust boundary, and approval requirements designed to enable powerful automation while maintaining defense in depth.
+
+---
+
+## Implementation Status (2026-02-02)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Phase 1: Credential Storage** | 75% ✅ | macOS Keychain + encrypted file fallback complete; mobile backends pending |
+| **Phase 2: Gateway Security** | 85% ✅ | Auto-token, loopback auth, token validation complete; native app integration pending |
+| **Phase 3: Sandboxed Execution** | 30% | Default mode changed; network policy, dangerous tools approval flow pending |
+| **Phase 4: Skill Vetting** | 0% | Not started |
+| **Phase 5: Workflows** | 0% | Not started |
+| **Phase 6: Multi-Model Routing** | 0% | Not started |
+| **Phase 7: Collaboration Security** | 0% | Not started |
+| **Phase 8: CLI & Documentation** | 50% ✅ | Security CLI commands complete; documentation updates in progress |
+
+**Implemented Files:**
+- `src/credentials/` - SecureCredentialStore with keychain and encrypted file backends
+- `src/config/security-presets.ts` - Security level presets (standard/hardened/paranoid)
+- `src/config/types.security.ts` - SecurityConfig type definitions
+- `src/gateway/token.ts` - Secure token generation and validation
+- `src/security/audit.ts` - Security audit checks (sandbox, credentials, dangerous tools)
+- `src/security/audit-credentials.ts` - Credential storage audit and migration
+- `src/cli/security-cli.ts` - Security commands (status, audit, configure, report, test)
+
+**See TODO.md** for detailed implementation checklist and gap analysis.
 
 ---
 
