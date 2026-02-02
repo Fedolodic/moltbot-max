@@ -1,4 +1,4 @@
-# OpenClaw Security Hardening - Work Breakdown Structure
+# SecureClaw - Security Hardening Work Breakdown Structure
 
 **Generated**: 2026-01-29
 **Last Updated**: 2026-02-02 (Gap Analysis v3 - CLI Complete)

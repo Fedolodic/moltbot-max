@@ -1,4 +1,4 @@
-# Security Hardening by Default Design Document
+# SecureClaw - Security Hardening by Default Design Document
 
 | Field | Value |
 |-------|-------|
