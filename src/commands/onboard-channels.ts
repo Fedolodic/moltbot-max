@@ -1,36 +1,36 @@
-import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
-import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js";
-import { listChannelPlugins, getChannelPlugin } from "../channels/plugins/index.js";
 import type { ChannelMeta } from "../channels/plugins/types.js";
-import {
-  formatChannelPrimerLine,
-  formatChannelSelectionLine,
-  listChatChannels,
-} from "../channels/registry.js";
-import type { MoltbotConfig } from "../config/config.js";
-import { isChannelConfigured } from "../config/plugin-auto-enable.js";
+import type { OpenClawConfig } from "../config/config.js";
 import type { DmPolicy } from "../config/types.js";
-import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
-import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { formatDocsLink } from "../terminal/links.js";
-import { formatCliCommand } from "../cli/command-format.js";
-import { enablePluginInConfig } from "../plugins/enable.js";
 import type { WizardPrompter, WizardSelectOption } from "../wizard/prompts.js";
 import type { ChannelChoice } from "./onboard-types.js";
-import {
-  getChannelOnboardingAdapter,
-  listChannelOnboardingAdapters,
-} from "./onboarding/registry.js";
-import {
-  ensureOnboardingPluginInstalled,
-  reloadOnboardingPluginRegistry,
-} from "./onboarding/plugin-install.js";
 import type {
   ChannelOnboardingDmPolicy,
   ChannelOnboardingStatus,
   SetupChannelsOptions,
 } from "./onboarding/types.js";
+import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
+import { listChannelPluginCatalogEntries } from "../channels/plugins/catalog.js";
+import { resolveChannelDefaultAccountId } from "../channels/plugins/helpers.js";
+import { listChannelPlugins, getChannelPlugin } from "../channels/plugins/index.js";
+import {
+  formatChannelPrimerLine,
+  formatChannelSelectionLine,
+  listChatChannels,
+} from "../channels/registry.js";
+import { formatCliCommand } from "../cli/command-format.js";
+import { isChannelConfigured } from "../config/plugin-auto-enable.js";
+import { enablePluginInConfig } from "../plugins/enable.js";
+import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../routing/session-key.js";
+import { formatDocsLink } from "../terminal/links.js";
+import {
+  ensureOnboardingPluginInstalled,
+  reloadOnboardingPluginRegistry,
+} from "./onboarding/plugin-install.js";
+import {
+  getChannelOnboardingAdapter,
+  listChannelOnboardingAdapters,
+} from "./onboarding/registry.js";
 
 type ConfiguredChannelAction = "update" | "disable" | "delete" | "skip";
 
@@ -74,38 +74,42 @@ async function promptConfiguredAction(params: {
     ...(supportsDelete ? [deleteOption] : []),
     skipOption,
   ];
-  return (await prompter.select({
+  return await prompter.select({
     message: `${label} already configured. What do you want to do?`,
     options,
     initialValue: "update",
-  })) as ConfiguredChannelAction;
+  });
 }
 
 async function promptRemovalAccountId(params: {
-  cfg: MoltbotConfig;
+  cfg: OpenClawConfig;
   prompter: WizardPrompter;
   label: string;
   channel: ChannelChoice;
 }): Promise<string> {
   const { cfg, prompter, label, channel } = params;
   const plugin = getChannelPlugin(channel);
-  if (!plugin) return DEFAULT_ACCOUNT_ID;
+  if (!plugin) {
+    return DEFAULT_ACCOUNT_ID;
+  }
   const accountIds = plugin.config.listAccountIds(cfg).filter(Boolean);
   const defaultAccountId = resolveChannelDefaultAccountId({ plugin, cfg, accountIds });
-  if (accountIds.length <= 1) return defaultAccountId;
-  const selected = (await prompter.select({
+  if (accountIds.length <= 1) {
+    return defaultAccountId;
+  }
+  const selected = await prompter.select({
     message: `${label} account`,
     options: accountIds.map((accountId) => ({
       value: accountId,
       label: formatAccountLabel(accountId),
     })),
     initialValue: defaultAccountId,
-  })) as string;
+  });
   return normalizeAccountId(selected) ?? defaultAccountId;
 }
 
 async function collectChannelStatus(params: {
-  cfg: MoltbotConfig;
+  cfg: OpenClawConfig;
   options?: SetupChannelsOptions;
   accountOverrides: Partial<Record<ChannelChoice, string>>;
 }): Promise<ChannelStatusSummary> {
@@ -157,7 +161,7 @@ async function collectChannelStatus(params: {
 }
 
 export async function noteChannelStatus(params: {
-  cfg: MoltbotConfig;
+  cfg: OpenClawConfig;
   prompter: WizardPrompter;
   options?: SetupChannelsOptions;
   accountOverrides?: Partial<Record<ChannelChoice, string>>;
@@ -205,7 +209,9 @@ function resolveQuickstartDefault(
 ): ChannelChoice | undefined {
   let best: { channel: ChannelChoice; score: number } | null = null;
   for (const [channel, status] of statusByChannel) {
-    if (status.quickstartScore == null) continue;
+    if (status.quickstartScore == null) {
+      continue;
+    }
     if (!best || status.quickstartScore > best.score) {
       best = { channel, score: status.quickstartScore };
     }
@@ -214,22 +220,26 @@ function resolveQuickstartDefault(
 }
 
 async function maybeConfigureDmPolicies(params: {
-  cfg: MoltbotConfig;
+  cfg: OpenClawConfig;
   selection: ChannelChoice[];
   prompter: WizardPrompter;
   accountIdsByChannel?: Map<ChannelChoice, string>;
-}): Promise<MoltbotConfig> {
+}): Promise<OpenClawConfig> {
   const { selection, prompter, accountIdsByChannel } = params;
   const dmPolicies = selection
     .map((channel) => getChannelOnboardingAdapter(channel)?.dmPolicy)
     .filter(Boolean) as ChannelOnboardingDmPolicy[];
-  if (dmPolicies.length === 0) return params.cfg;
+  if (dmPolicies.length === 0) {
+    return params.cfg;
+  }
 
   const wants = await prompter.confirm({
     message: "Configure DM access policies now? (default: allowlist)",
     initialValue: false,
   });
-  if (!wants) return params.cfg;
+  if (!wants) {
+    return params.cfg;
+  }
 
   let cfg = params.cfg;
   const selectPolicy = async (policy: ChannelOnboardingDmPolicy) => {
@@ -237,7 +247,7 @@ async function maybeConfigureDmPolicies(params: {
       [
         "Default: allowlist (only users in allowFrom can DM the bot).",
         `Pairing mode: ${policy.policyKey}="pairing" (unknown DMs get a pairing code).`,
-        `Approve pairing: ${formatCliCommand(`moltbot pairing approve ${policy.channel} <code>`)}`,
+        `Approve pairing: ${formatCliCommand(`openclaw pairing approve ${policy.channel} <code>`)}`,
         `Public DMs: ${policy.policyKey}="open" + ${policy.allowFromKey} includes "*".`,
         'Multi-user DMs: set session.dmScope="per-channel-peer" (or "per-account-channel-peer" for multi-account channels) to isolate sessions.',
         `Docs: ${formatDocsLink("/start/pairing", "start/pairing")}`,
@@ -276,11 +286,11 @@ async function maybeConfigureDmPolicies(params: {
 // Channel-specific prompts moved into onboarding adapters.
 
 export async function setupChannels(
-  cfg: MoltbotConfig,
+  cfg: OpenClawConfig,
   runtime: RuntimeEnv,
   prompter: WizardPrompter,
   options?: SetupChannelsOptions,
-): Promise<MoltbotConfig> {
+): Promise<OpenClawConfig> {
   let next = cfg;
   const forceAllowFromChannels = new Set(options?.forceAllowFromChannels ?? []);
   const accountOverrides: Partial<Record<ChannelChoice, string>> = {
@@ -302,10 +312,12 @@ export async function setupChannels(
         message: "Configure chat channels now?",
         initialValue: true,
       });
-  if (!shouldConfigure) return cfg;
+  if (!shouldConfigure) {
+    return cfg;
+  }
 
   const corePrimer = listChatChannels().map((meta) => ({
-    id: meta.id as ChannelChoice,
+    id: meta.id,
     label: meta.label,
     blurb: meta.blurb,
   }));
@@ -313,9 +325,9 @@ export async function setupChannels(
   const primerChannels = [
     ...corePrimer,
     ...installedPlugins
-      .filter((plugin) => !coreIds.has(plugin.id as ChannelChoice))
+      .filter((plugin) => !coreIds.has(plugin.id))
       .map((plugin) => ({
-        id: plugin.id as ChannelChoice,
+        id: plugin.id,
         label: plugin.meta.label,
         blurb: plugin.meta.blurb,
       })),
@@ -343,14 +355,20 @@ export async function setupChannels(
 
   const selection: ChannelChoice[] = [];
   const addSelection = (channel: ChannelChoice) => {
-    if (!selection.includes(channel)) selection.push(channel);
+    if (!selection.includes(channel)) {
+      selection.push(channel);
+    }
   };
 
   const resolveDisabledHint = (channel: ChannelChoice): string | undefined => {
     const plugin = getChannelPlugin(channel);
     if (!plugin) {
-      if (next.plugins?.entries?.[channel]?.enabled === false) return "plugin disabled";
-      if (next.plugins?.enabled === false) return "plugins disabled";
+      if (next.plugins?.entries?.[channel]?.enabled === false) {
+        return "plugin disabled";
+      }
+      if (next.plugins?.enabled === false) {
+        return "plugins disabled";
+      }
       return undefined;
     }
     const accountId = resolveChannelDefaultAccountId({ plugin, cfg: next });
@@ -419,13 +437,17 @@ export async function setupChannels(
 
   const refreshStatus = async (channel: ChannelChoice) => {
     const adapter = getChannelOnboardingAdapter(channel);
-    if (!adapter) return;
+    if (!adapter) {
+      return;
+    }
     const status = await adapter.getStatus({ cfg: next, options, accountOverrides });
     statusByChannel.set(channel, status);
   };
 
   const ensureBundledPluginEnabled = async (channel: ChannelChoice): Promise<boolean> => {
-    if (getChannelPlugin(channel)) return true;
+    if (getChannelPlugin(channel)) {
+      return true;
+    }
     const result = enablePluginInConfig(next, channel);
     next = result.config;
     if (!result.enabled) {
@@ -486,12 +508,16 @@ export async function setupChannels(
       supportsDelete,
     });
 
-    if (action === "skip") return;
+    if (action === "skip") {
+      return;
+    }
     if (action === "update") {
       await configureChannel(channel);
       return;
     }
-    if (!options?.allowDisable) return;
+    if (!options?.allowDisable) {
+      return;
+    }
 
     if (action === "delete" && !supportsDelete) {
       await prompter.note(`${label} does not support deleting config entries.`, "Remove channel");
@@ -520,7 +546,9 @@ export async function setupChannels(
         message: `Delete ${label} account "${accountLabel}"?`,
         initialValue: false,
       });
-      if (!confirmed) return;
+      if (!confirmed) {
+        return;
+      }
       if (plugin?.config.deleteAccount) {
         next = plugin.config.deleteAccount({ cfg: next, accountId: resolvedAccountId });
       }
@@ -553,7 +581,9 @@ export async function setupChannels(
         workspaceDir,
       });
       next = result.cfg;
-      if (!result.installed) return;
+      if (!result.installed) {
+        return;
+      }
       reloadOnboardingPluginRegistry({
         cfg: next,
         runtime,
@@ -562,7 +592,9 @@ export async function setupChannels(
       await refreshStatus(channel);
     } else {
       const enabled = await ensureBundledPluginEnabled(channel);
-      if (!enabled) return;
+      if (!enabled) {
+        return;
+      }
     }
 
     const plugin = getChannelPlugin(channel);
@@ -585,7 +617,7 @@ export async function setupChannels(
         {
           value: "__skip__",
           label: "Skip for now",
-          hint: `You can add channels later via \`${formatCliCommand("moltbot channels add")}\``,
+          hint: `You can add channels later via \`${formatCliCommand("openclaw channels add")}\``,
         },
       ],
       initialValue: quickstartDefault,
@@ -610,7 +642,9 @@ export async function setupChannels(
         ],
         initialValue,
       })) as ChannelChoice | typeof doneValue;
-      if (choice === doneValue) break;
+      if (choice === doneValue) {
+        break;
+      }
       await handleChannelChoice(choice);
     }
   }

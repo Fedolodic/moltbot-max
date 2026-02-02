@@ -1,5 +1,13 @@
-import { randomUUID } from "node:crypto";
 import type { Component, TUI } from "@mariozechner/pi-tui";
+import { randomUUID } from "node:crypto";
+import type { ChatLog } from "./components/chat-log.js";
+import type { GatewayChatClient } from "./gateway-chat.js";
+import type {
+  AgentSummary,
+  GatewayStatusSummary,
+  TuiOptions,
+  TuiStateAccess,
+} from "./tui-types.js";
 import {
   formatThinkingLevels,
   normalizeUsageDisplay,
@@ -8,20 +16,12 @@ import {
 import { normalizeAgentId } from "../routing/session-key.js";
 import { formatRelativeTime } from "../utils/time-format.js";
 import { helpText, parseCommand } from "./commands.js";
-import type { ChatLog } from "./components/chat-log.js";
 import {
   createFilterableSelectList,
   createSearchableSelectList,
   createSettingsList,
 } from "./components/selectors.js";
-import type { GatewayChatClient } from "./gateway-chat.js";
 import { formatStatusSummary } from "./tui-status-summary.js";
-import type {
-  AgentSummary,
-  GatewayStatusSummary,
-  TuiOptions,
-  TuiStateAccess,
-} from "./tui-types.js";
 
 type CommandHandlerContext = {
   client: GatewayChatClient;
@@ -229,7 +229,9 @@ export function createCommandHandlers(context: CommandHandlerContext) {
 
   const handleCommand = async (raw: string) => {
     const { name, args } = parseCommand(raw);
-    if (!name) return;
+    if (!name) {
+      return;
+    }
     switch (name) {
       case "help":
         chatLog.addSystem(
@@ -248,7 +250,9 @@ export function createCommandHandlers(context: CommandHandlerContext) {
           }
           if (status && typeof status === "object") {
             const lines = formatStatusSummary(status as GatewayStatusSummary);
-            for (const line of lines) chatLog.addSystem(line);
+            for (const line of lines) {
+              chatLog.addSystem(line);
+            }
             break;
           }
           chatLog.addSystem("status: unknown response");
