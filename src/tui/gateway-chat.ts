@@ -214,6 +214,16 @@ export class GatewayChatClient {
     return await this.client.request("sessions.reset", { key });
   }
 
+  async compactSession(key: string): Promise<{
+    ok: boolean;
+    compacted: boolean;
+    reason?: string;
+    tokensBefore?: number;
+    tokensAfter?: number;
+  }> {
+    return await this.client.request("sessions.compact", { key });
+  }
+
   async getStatus() {
     return await this.client.request("status");
   }

@@ -446,6 +446,74 @@ export function createCommandHandlers(context: CommandHandlerContext) {
   };
 
   const sendMessage = async (text: string) => {
+    // Auto-recovery: handle context overflow automatically for 24/7 autonomous operation
+    const { totalTokens, contextTokens } = state.sessionInfo;
+    if (typeof totalTokens === "number" && typeof contextTokens === "number" && contextTokens > 0) {
+      const pct = Math.round((totalTokens / contextTokens) * 100);
+
+      // At or over limit - try auto-recovery
+      if (pct >= 90) {
+        chatLog.addSystem(`Context at ${pct}% - attempting auto-recovery...`);
+        setActivityStatus("compacting");
+        tui.requestRender();
+
+        let recovered = false;
+
+        // Step 1: Try compaction first (preserves context)
+        if (pct <= 200) {
+          try {
+            const result = await client.compactSession(state.currentSessionKey);
+            if (result.compacted) {
+              const before = result.tokensBefore
+                ? `${Math.round(result.tokensBefore / 1000)}k`
+                : "?";
+              const after = result.tokensAfter ? `${Math.round(result.tokensAfter / 1000)}k` : "?";
+              chatLog.addSystem(`Compacted: ${before} → ${after} tokens.`);
+              await refreshSessionInfo();
+              // Check if compaction brought us under the limit
+              const newPct =
+                typeof state.sessionInfo.totalTokens === "number" &&
+                typeof state.sessionInfo.contextTokens === "number" &&
+                state.sessionInfo.contextTokens > 0
+                  ? Math.round(
+                      (state.sessionInfo.totalTokens / state.sessionInfo.contextTokens) * 100,
+                    )
+                  : 0;
+              if (newPct < 95) {
+                recovered = true;
+                chatLog.addSystem("Recovery successful. Continuing...");
+              } else {
+                chatLog.addSystem(`Still at ${newPct}% after compaction.`);
+              }
+            } else {
+              chatLog.addSystem(`Compaction skipped: ${result.reason ?? "nothing to compact"}`);
+            }
+          } catch (err) {
+            chatLog.addSystem(`Compaction failed: ${String(err)}`);
+          }
+        }
+
+        // Step 2: If compaction didn't help, auto-reset session
+        if (!recovered) {
+          chatLog.addSystem("Auto-resetting session to continue operation...");
+          try {
+            await client.resetSession(state.currentSessionKey);
+            await loadHistory();
+            await refreshSessionInfo();
+            chatLog.addSystem("Session reset. Starting fresh context.");
+            recovered = true;
+          } catch (err) {
+            chatLog.addSystem(`Auto-reset failed: ${String(err)}. Proceeding anyway...`);
+          }
+        }
+
+        tui.requestRender();
+      } else if (pct >= 80) {
+        // Info when approaching limit (80-89%) - will auto-handle when needed
+        chatLog.addSystem(`Context at ${pct}%. Will auto-compact/reset when needed.`);
+      }
+    }
+
     try {
       chatLog.addUser(text);
       tui.requestRender();
@@ -463,7 +531,17 @@ export function createCommandHandlers(context: CommandHandlerContext) {
         // Only reset if this is still the active run
         if (state.activeChatRunId === runId) {
           state.activeChatRunId = null;
-          chatLog.addSystem("run timed out - no response received");
+          // Provide helpful timeout message with suggestions
+          const { totalTokens: currTotal, contextTokens: currCtx } = state.sessionInfo;
+          const isNearLimit =
+            typeof currTotal === "number" &&
+            typeof currCtx === "number" &&
+            currCtx > 0 &&
+            currTotal / currCtx >= 0.7;
+          const hint = isNearLimit
+            ? " Session may be near context limit - try /reset to start fresh."
+            : " Check gateway logs or try again.";
+          chatLog.addSystem(`Run timed out - no response received.${hint}`);
           setActivityStatus("timeout");
           tui.requestRender();
         }
