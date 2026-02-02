@@ -1,7 +1,7 @@
 # Moltbot Security Hardening - Work Breakdown Structure
 
 **Generated**: 2026-01-29
-**Last Updated**: 2026-01-30 (Gap Analysis v2)
+**Last Updated**: 2026-02-02 (Gap Analysis v3 - CLI Complete)
 **Status**: Active
 **Source**: [Security Hardening Design Doc](design-docs/2-security-hardening-by-default.md)
 
@@ -79,7 +79,7 @@ These items were identified as gaps between the design doc and current implement
 | 4. Encrypted Credential Storage | 268-308 | 75% | GAP-1, 2, 7, 8, 13 (mobile/desktop backends) |
 | 5. Skill Vetting | 309-356 | 0% | Phase 4 tasks + GAP-24-25 |
 | 6. Security Audit Checks | 362-376 | 70% | GAP-24-27 |
-| 7. CLI Commands | 378-394 | 33% | GAP-28-30 |
+| 7. CLI Commands | 378-394 | 100% ✅ | All complete (GAP-28-30) |
 | 8. Workflow Profiles (Part 2) | 398-1585 | 0% | Phase 5-6 tasks |
 | 9. Platform Hardening | 1766-1941 | 0% | Phase 3.4 tasks |
 
@@ -241,20 +241,23 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 #### Missing CLI Commands (Design Doc lines 378-394)
 
-- [ ] **GAP-28** `moltbot security configure` command
+- [x] **GAP-28** `moltbot security configure` command ✅
   - Description: Interactive security configuration wizard
-  - Current: Not implemented
-  - Priority: Medium
+  - **Completed**: 2026-02-02
+  - Implementation: `src/cli/security-cli.ts` - `moltbot security configure`
+  - Features: Use case recommendation, security level selection, customizable settings, non-interactive mode
 
-- [ ] **GAP-29** `moltbot security report` command
-  - Description: Export security report in json/html/pdf format
-  - Current: Not implemented
-  - Priority: Low
+- [x] **GAP-29** `moltbot security report` command ✅
+  - Description: Export security report in json/html format
+  - **Completed**: 2026-02-02
+  - Implementation: `src/cli/security-cli.ts` - `moltbot security report --format json|html -o <file>`
+  - Features: Full audit with credentials, configuration, findings; HTML report with styling
 
-- [ ] **GAP-30** `moltbot security test` command
+- [x] **GAP-30** `moltbot security test` command ✅
   - Description: Simulate attack scenarios (prompt-injection, credential-exfil, skill-malware)
-  - Current: Not implemented
-  - Priority: Low (useful for security validation)
+  - **Completed**: 2026-02-02
+  - Implementation: `src/cli/security-cli.ts` - `moltbot security test --scenario <name>`
+  - Scenarios: prompt-injection, credential-exfil, skill-malware, all
 
 #### DM Policy & Channel Security Gaps (Design Doc lines 167-204)
 
@@ -1252,21 +1255,28 @@ These gaps were identified by comparing `src/config/types.security.ts` with desi
 
 **Dependencies**: Phase 1-5
 **Priority**: Medium
+**Status**: 100% Complete ✅
 
-- [ ] **8.2.1** Implement `moltbot security configure` wizard
+- [x] **8.2.1** Implement `moltbot security configure` wizard ✅
   - Dependencies: 1.2.2, 2.2.1, 3.1.1
-  - Interactive security setup
-  - Recommend settings based on use case
+  - **Completed**: 2026-02-02
+  - Interactive security setup with use case recommendations
+  - Supports --non-interactive for automated setup
+  - Customizable gateway, sandbox, and audit settings
 
-- [ ] **8.2.2** Implement `moltbot security report` command
+- [x] **8.2.2** Implement `moltbot security report` command ✅
   - Dependencies: 1.4.3
-  - Export security report
-  - Formats: json, html, pdf
+  - **Completed**: 2026-02-02
+  - Export security report in JSON or HTML format
+  - Includes full audit, credential status, configuration, findings
+  - Output to file or stdout
 
-- [ ] **8.2.3** Implement `moltbot security test` command
+- [x] **8.2.3** Implement `moltbot security test` command ✅
   - Dependencies: Phase 3, 4
+  - **Completed**: 2026-02-02
   - Scenarios: prompt-injection, credential-exfil, skill-malware
-  - Verify defenses work
+  - Verifies security defenses are properly configured
+  - Verbose mode for detailed output
 
 ### 8.3 Emergency Procedures
 

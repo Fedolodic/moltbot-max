@@ -466,7 +466,7 @@ function collectElevatedFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
  * Collect sandbox security configuration findings.
  * Part of Phase 1: Security Hardening by Default.
  */
-function collectSandboxSecurityFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+function collectSandboxSecurityFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const securityConfig = resolveSecurityConfig(cfg.security);
 
@@ -518,7 +518,7 @@ function collectSandboxSecurityFindings(cfg: MoltbotConfig): SecurityAuditFindin
  * Collect security level and preset compliance findings.
  * Part of Phase 1: Security Hardening by Default.
  */
-function collectSecurityLevelFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+function collectSecurityLevelFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
   const securityConfig = resolveSecurityConfig(cfg.security);
 
@@ -585,7 +585,7 @@ function collectSecurityLevelFindings(cfg: MoltbotConfig): SecurityAuditFinding[
  * 1. Dangerous tools enabled (warn)
  * 2. Dangerous tools enabled WITHOUT requireApproval (critical)
  */
-function collectDangerousToolsFindings(cfg: MoltbotConfig): SecurityAuditFinding[] {
+function collectDangerousToolsFindings(cfg: OpenClawConfig): SecurityAuditFinding[] {
   const findings: SecurityAuditFinding[] = [];
 
   // Dangerous tool categories with descriptions

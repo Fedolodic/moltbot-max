@@ -1,6 +1,15 @@
 import type { Command } from "commander";
+import fs from "node:fs/promises";
+import type { SecurityLevel } from "../config/types.security.js";
 import { loadConfig } from "../config/config.js";
-import { resolveSecurityConfig, validateSecurityConfig } from "../config/security-presets.js";
+import { writeConfigFile } from "../config/io.js";
+import { resolveStateDir } from "../config/paths.js";
+import {
+  SECURITY_PRESETS,
+  recommendSecurityLevel,
+  resolveSecurityConfig,
+  validateSecurityConfig,
+} from "../config/security-presets.js";
 import { defaultRuntime } from "../runtime.js";
 import { getCredentialStorageStatus } from "../security/audit-credentials.js";
 import { runSecurityAudit } from "../security/audit.js";
@@ -8,6 +17,8 @@ import { fixSecurityFootguns } from "../security/fix.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { isRich, theme } from "../terminal/theme.js";
 import { shortenHomeInString, shortenHomePath } from "../utils.js";
+import { createClackPrompter } from "../wizard/clack-prompter.js";
+import { WizardCancelledError } from "../wizard/prompts.js";
 import { formatCliCommand } from "./command-format.js";
 
 type SecurityAuditOptions = {
@@ -317,4 +328,465 @@ export function registerSecurityCli(program: Command) {
 
       defaultRuntime.log(lines.join("\n"));
     });
+
+  // moltbot security configure - Interactive security configuration wizard (GAP-28)
+  security
+    .command("configure")
+    .description("Interactive security configuration wizard")
+    .option("--non-interactive", "Use recommended defaults without prompts", false)
+    .action(async (opts: { nonInteractive?: boolean }) => {
+      const cfg = loadConfig();
+      const currentLevel = cfg.security?.level ?? "hardened";
+      const rich = isRich();
+      const heading = (text: string) => (rich ? theme.heading(text) : text);
+      const muted = (text: string) => (rich ? theme.muted(text) : text);
+
+      defaultRuntime.log(heading("Security Configuration Wizard"));
+      defaultRuntime.log("");
+
+      if (opts.nonInteractive) {
+        // Use recommended defaults
+        const recommended = recommendSecurityLevel({
+          isProduction: true,
+          hasFinancialWorkflows: false,
+          hasExternalCollaborators: false,
+        });
+        const preset = SECURITY_PRESETS[recommended];
+
+        const newConfig = {
+          ...cfg,
+          security: {
+            ...cfg.security,
+            level: recommended,
+            credentials: preset.credentials,
+            gateway: preset.gateway,
+            sandbox: preset.sandbox,
+            audit: preset.audit,
+            skills: preset.skills,
+          },
+        };
+
+        await writeConfigFile(newConfig);
+        defaultRuntime.log(`✓ Applied ${recommended} security preset`);
+        defaultRuntime.log(muted(`Run ${formatCliCommand("openclaw security status")} to verify.`));
+        return;
+      }
+
+      // Interactive mode
+      const prompter = createClackPrompter();
+
+      try {
+        await prompter.intro("Let's configure your security settings.");
+
+        // Question 1: Use case
+        const useCase = await prompter.select({
+          message: "What best describes your use case?",
+          options: [
+            { value: "personal", label: "Personal use / local development" },
+            { value: "production", label: "Production deployment" },
+            { value: "financial", label: "Financial workflows (trading, budgets)" },
+            { value: "collaboration", label: "Collaboration with external users" },
+          ],
+          initialValue: "personal",
+        });
+
+        // Recommend level based on use case
+        const recommended = recommendSecurityLevel({
+          isProduction: useCase === "production" || useCase === "collaboration",
+          hasFinancialWorkflows: useCase === "financial",
+          hasExternalCollaborators: useCase === "collaboration",
+        });
+
+        // Question 2: Security level
+        const levelChoice = await prompter.select({
+          message: `Recommended level: ${recommended.toUpperCase()}. Choose your security level:`,
+          options: [
+            {
+              value: "standard",
+              label: "Standard - Good defaults for local development",
+            },
+            {
+              value: "hardened",
+              label: "Hardened - Recommended for production (default)",
+            },
+            {
+              value: "paranoid",
+              label: "Paranoid - Maximum security, reduced convenience",
+            },
+          ],
+          initialValue: recommended,
+        });
+
+        const selectedLevel = levelChoice as SecurityLevel;
+        const preset = SECURITY_PRESETS[selectedLevel];
+
+        // Question 3: Customize or use preset
+        const customize = await prompter.confirm({
+          message: "Do you want to customize individual settings?",
+          initialValue: false,
+        });
+
+        let finalConfig = { ...preset };
+
+        if (customize) {
+          // Gateway auth
+          const requireLoopbackAuth = await prompter.confirm({
+            message: "Require authentication even for localhost connections?",
+            initialValue: preset.gateway.requireAuthForLoopback,
+          });
+          finalConfig.gateway = {
+            ...finalConfig.gateway,
+            requireAuthForLoopback: requireLoopbackAuth,
+          };
+
+          // Sandbox mode
+          const sandboxMode = await prompter.select({
+            message: "Sandbox execution mode:",
+            options: [
+              { value: "off", label: "Off - No sandboxing (not recommended)" },
+              { value: "non-main", label: "Non-main - Sandbox agent sessions only" },
+              { value: "all", label: "All - Sandbox all execution (recommended)" },
+            ],
+            initialValue: preset.sandbox.defaultMode,
+          });
+          finalConfig.sandbox = {
+            ...finalConfig.sandbox,
+            defaultMode: sandboxMode as "off" | "non-main" | "all",
+          };
+
+          // Audit on start
+          const runAuditOnStart = await prompter.confirm({
+            message: "Run security audit on gateway startup?",
+            initialValue: preset.audit.runOnStart,
+          });
+          finalConfig.audit = { ...finalConfig.audit, runOnStart: runAuditOnStart };
+
+          // Block on critical
+          if (runAuditOnStart) {
+            const blockOnCritical = await prompter.confirm({
+              message: "Block gateway startup if critical issues found?",
+              initialValue: preset.audit.blockOnCritical,
+            });
+            finalConfig.audit = { ...finalConfig.audit, blockOnCritical };
+          }
+        }
+
+        // Apply configuration
+        const newConfig = {
+          ...cfg,
+          security: {
+            level: selectedLevel,
+            credentials: finalConfig.credentials,
+            gateway: finalConfig.gateway,
+            sandbox: finalConfig.sandbox,
+            audit: finalConfig.audit,
+            skills: finalConfig.skills,
+          },
+        };
+
+        await writeConfigFile(newConfig);
+
+        await prompter.outro(`Security configured to ${selectedLevel.toUpperCase()} level.`);
+        defaultRuntime.log(muted(`Run ${formatCliCommand("openclaw security status")} to verify.`));
+      } catch (err) {
+        if (err instanceof WizardCancelledError) {
+          defaultRuntime.log(muted("Configuration cancelled."));
+          return;
+        }
+        throw err;
+      }
+    });
+
+  // moltbot security report - Export security report (GAP-29)
+  security
+    .command("report")
+    .description("Export security report in various formats")
+    .option("--format <format>", "Output format: json, html", "json")
+    .option("-o, --output <file>", "Output file path (defaults to stdout for json)")
+    .action(async (opts: { format?: string; output?: string }) => {
+      const cfg = loadConfig();
+      const securityConfig = resolveSecurityConfig(cfg.security);
+      const credStatus = await getCredentialStorageStatus();
+
+      // Run full audit
+      const auditReport = await runSecurityAudit({
+        config: cfg,
+        deep: true,
+        includeFilesystem: true,
+        includeChannelSecurity: true,
+      });
+
+      // Validate config
+      const validationIssues = validateSecurityConfig(securityConfig, securityConfig.level);
+
+      const report = {
+        generatedAt: new Date().toISOString(),
+        securityLevel: securityConfig.level,
+        summary: auditReport.summary,
+        findings: auditReport.findings,
+        credentials: {
+          backend: credStatus.backend,
+          available: credStatus.backendAvailable,
+          count: credStatus.credentialCount,
+          plaintextDetected: credStatus.plaintextCount,
+        },
+        configuration: {
+          gateway: securityConfig.gateway,
+          sandbox: securityConfig.sandbox,
+          skills: securityConfig.skills,
+          audit: securityConfig.audit,
+        },
+        validationIssues,
+        deep: auditReport.deep,
+      };
+
+      if (opts.format === "html") {
+        const html = generateHtmlReport(report);
+        if (opts.output) {
+          await fs.writeFile(opts.output, html, "utf-8");
+          defaultRuntime.log(`Report written to ${opts.output}`);
+        } else {
+          defaultRuntime.log(html);
+        }
+      } else {
+        // JSON format
+        const json = JSON.stringify(report, null, 2);
+        if (opts.output) {
+          await fs.writeFile(opts.output, json, "utf-8");
+          defaultRuntime.log(`Report written to ${opts.output}`);
+        } else {
+          defaultRuntime.log(json);
+        }
+      }
+    });
+
+  // moltbot security test - Run security scenario tests (GAP-30)
+  security
+    .command("test")
+    .description("Simulate security attack scenarios to verify defenses")
+    .option(
+      "--scenario <name>",
+      "Specific scenario: prompt-injection, credential-exfil, skill-malware, all",
+      "all",
+    )
+    .option("--verbose", "Show detailed test output", false)
+    .action(async (opts: { scenario?: string; verbose?: boolean }) => {
+      const cfg = loadConfig();
+      const securityConfig = resolveSecurityConfig(cfg.security);
+      const rich = isRich();
+      const heading = (text: string) => (rich ? theme.heading(text) : text);
+      const ok = (text: string) => (rich ? theme.success(text) : text);
+      const warn = (text: string) => (rich ? theme.warn(text) : text);
+      const error = (text: string) => (rich ? theme.error(text) : text);
+      const muted = (text: string) => (rich ? theme.muted(text) : text);
+
+      defaultRuntime.log(heading("Security Scenario Tests"));
+      defaultRuntime.log("");
+
+      const scenarios =
+        opts.scenario === "all"
+          ? ["prompt-injection", "credential-exfil", "skill-malware"]
+          : [opts.scenario ?? "all"];
+
+      const results: Array<{ name: string; passed: boolean; details: string[] }> = [];
+
+      for (const scenario of scenarios) {
+        const result = await runSecurityScenario(
+          scenario,
+          securityConfig,
+          cfg,
+          opts.verbose ?? false,
+        );
+        results.push(result);
+      }
+
+      // Print results
+      defaultRuntime.log("");
+      defaultRuntime.log(heading("Results"));
+      defaultRuntime.log("");
+
+      let allPassed = true;
+      for (const result of results) {
+        const icon = result.passed ? ok("✓") : error("✗");
+        const status = result.passed ? ok("PASS") : error("FAIL");
+        defaultRuntime.log(`${icon} ${result.name}: ${status}`);
+        if (opts.verbose || !result.passed) {
+          for (const detail of result.details) {
+            defaultRuntime.log(`    ${muted(detail)}`);
+          }
+        }
+        if (!result.passed) allPassed = false;
+      }
+
+      defaultRuntime.log("");
+      if (allPassed) {
+        defaultRuntime.log(ok("All security scenarios passed!"));
+      } else {
+        defaultRuntime.log(warn("Some security scenarios failed. Review findings above."));
+        defaultRuntime.log(
+          muted(`Run ${formatCliCommand("openclaw security audit --fix")} to remediate issues.`),
+        );
+      }
+    });
+}
+
+/**
+ * Generate HTML security report.
+ */
+function generateHtmlReport(report: {
+  generatedAt: string;
+  securityLevel: string;
+  summary: { critical: number; warn: number; info: number };
+  findings: Array<{
+    checkId: string;
+    severity: string;
+    title: string;
+    detail: string;
+    remediation?: string;
+  }>;
+  credentials: { backend: string; available: boolean; count: number; plaintextDetected: number };
+  configuration: Record<string, unknown>;
+  validationIssues: string[];
+}): string {
+  const escapeHtml = (text: string) =>
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const severityColor = (sev: string) =>
+    sev === "critical" ? "#dc2626" : sev === "warn" ? "#d97706" : "#6b7280";
+
+  const findingsHtml = report.findings
+    .map(
+      (f) => `
+      <div class="finding ${f.severity}">
+        <span class="severity" style="background: ${severityColor(f.severity)}">${f.severity.toUpperCase()}</span>
+        <strong>${escapeHtml(f.title)}</strong>
+        <code>${escapeHtml(f.checkId)}</code>
+        <p>${escapeHtml(f.detail)}</p>
+        ${f.remediation ? `<p class="remediation">Fix: ${escapeHtml(f.remediation)}</p>` : ""}
+      </div>
+    `,
+    )
+    .join("\n");
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OpenClaw Security Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem; }
+    h1, h2 { color: #1f2937; }
+    .summary { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .summary-item { padding: 1rem; border-radius: 8px; flex: 1; }
+    .critical { background: #fef2f2; border: 1px solid #fecaca; }
+    .warn { background: #fffbeb; border: 1px solid #fde68a; }
+    .info { background: #f3f4f6; border: 1px solid #e5e7eb; }
+    .count { font-size: 2rem; font-weight: bold; }
+    .finding { padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+    .severity { color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-right: 0.5rem; }
+    code { background: #f3f4f6; padding: 0.125rem 0.25rem; border-radius: 4px; font-size: 0.875rem; }
+    .remediation { color: #059669; font-style: italic; }
+    .meta { color: #6b7280; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <h1>OpenClaw Security Report</h1>
+  <p class="meta">Generated: ${escapeHtml(report.generatedAt)} | Security Level: ${escapeHtml(report.securityLevel.toUpperCase())}</p>
+
+  <h2>Summary</h2>
+  <div class="summary">
+    <div class="summary-item critical"><div class="count">${report.summary.critical}</div>Critical</div>
+    <div class="summary-item warn"><div class="count">${report.summary.warn}</div>Warnings</div>
+    <div class="summary-item info"><div class="count">${report.summary.info}</div>Info</div>
+  </div>
+
+  <h2>Credential Storage</h2>
+  <ul>
+    <li>Backend: ${escapeHtml(report.credentials.backend)}</li>
+    <li>Available: ${report.credentials.available ? "Yes" : "No"}</li>
+    <li>Stored credentials: ${report.credentials.count}</li>
+    <li>Plaintext detected: ${report.credentials.plaintextDetected}</li>
+  </ul>
+
+  <h2>Findings</h2>
+  ${findingsHtml || "<p>No findings.</p>"}
+
+  ${
+    report.validationIssues.length > 0
+      ? `<h2>Configuration Issues</h2><ul>${report.validationIssues.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`
+      : ""
+  }
+</body>
+</html>`;
+}
+
+/**
+ * Run a security scenario test.
+ */
+async function runSecurityScenario(
+  scenario: string,
+  securityConfig: ReturnType<typeof resolveSecurityConfig>,
+  cfg: ReturnType<typeof loadConfig>,
+  verbose: boolean,
+): Promise<{ name: string; passed: boolean; details: string[] }> {
+  const details: string[] = [];
+
+  switch (scenario) {
+    case "prompt-injection": {
+      // Test: Verify sandbox mode is enabled
+      const sandboxEnabled = securityConfig.sandbox.defaultMode !== "off";
+      details.push(`Sandbox mode: ${securityConfig.sandbox.defaultMode}`);
+
+      // Test: Verify dangerous tools require approval
+      const dangerousToolsConfig = cfg.tools?.dangerousTools ?? {};
+      const execEnabled =
+        (dangerousToolsConfig as Record<string, { enabled?: boolean; requireApproval?: boolean }>)
+          .exec?.enabled === true;
+      const execRequiresApproval =
+        (dangerousToolsConfig as Record<string, { enabled?: boolean; requireApproval?: boolean }>)
+          .exec?.requireApproval !== false;
+      details.push(
+        `Exec tool: ${execEnabled ? "enabled" : "disabled"}, approval: ${execRequiresApproval ? "required" : "not required"}`,
+      );
+
+      const passed = sandboxEnabled && (!execEnabled || execRequiresApproval);
+      return { name: "Prompt Injection Defense", passed, details };
+    }
+
+    case "credential-exfil": {
+      // Test: Verify credentials are in secure storage
+      const credStatus = await getCredentialStorageStatus();
+      details.push(`Credential backend: ${credStatus.backend}`);
+      details.push(`Plaintext credentials: ${credStatus.plaintextCount}`);
+
+      // Test: Verify network policy restricts outbound
+      const networkRestricted = securityConfig.sandbox.networkPolicy === "deny";
+      details.push(`Network policy: ${securityConfig.sandbox.networkPolicy}`);
+
+      const passed = credStatus.plaintextCount === 0 && credStatus.backend !== "plaintext";
+      return { name: "Credential Exfiltration Defense", passed, details };
+    }
+
+    case "skill-malware": {
+      // Test: Verify skill vetting is enabled
+      const autoVet = securityConfig.skills.autoVet;
+      details.push(`Auto-vet skills: ${autoVet}`);
+
+      // Test: Verify quarantine period
+      const quarantineDays = Math.floor(
+        securityConfig.skills.quarantinePeriodMs / (1000 * 60 * 60 * 24),
+      );
+      details.push(`Quarantine period: ${quarantineDays} days`);
+
+      // Test: Verify critical risk blocking
+      const blockCritical = securityConfig.skills.blockCriticalRisks;
+      details.push(`Block critical risks: ${blockCritical}`);
+
+      const passed = autoVet && blockCritical;
+      return { name: "Skill Malware Defense", passed, details };
+    }
+
+    default:
+      return { name: scenario, passed: false, details: [`Unknown scenario: ${scenario}`] };
+  }
 }

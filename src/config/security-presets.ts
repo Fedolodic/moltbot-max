@@ -6,7 +6,7 @@
 import type { ResolvedSecurityConfig, SecurityConfig, SecurityLevel } from "./types.security.js";
 
 // Default network allowlist for AI providers
-const DEFAULT_NETWORK_ALLOWLIST = [
+export const DEFAULT_NETWORK_ALLOWLIST = [
   "api.anthropic.com",
   "api.openai.com",
   "*.bedrock.*.amazonaws.com",
